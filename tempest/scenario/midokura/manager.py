@@ -17,6 +17,7 @@ import collections
 import yaml
 import os
 
+from tempest import exceptions
 from neutronclient.common import exceptions as NeutronClientException
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
@@ -46,29 +47,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     Creation Methods
     """
-    def _create_network_from_body(self, body):
-        result = self.network_client.create_network(body=body)
-        network = net_resources.DeletableNetwork(client=self.network_client,
-                                              **result['network'])
-        self.assertEqual(network.name, body['network']['name'])
-        self.addCleanup(self.delete_wrapper, network.delete)
-        return network
-
-    def _create_router_from_body(self, body):
-        result = self.network_client.create_router(body=body)
-        router = net_resources.DeletableRouter(client=self.network_client,
-                **result['router'])
-        self.addCleanup(self.delete_wrapper, router.delete)
-        return router
-
-    def _create_subnet_from_body(self, body):
-        _, result = self.network_client.create_subnet(**body)
-        self.assertIsNotNone(result, 'Unable to allocate tenant network')
-        subnet = net_resources.DeletableSubnet(client=self.network_client,
-                                            **result['subnet'])
-        self.addCleanup(self.delete_wrapper, subnet.delete)
-        return subnet
-
     def _create_security_group_rule_list(self, rule_dict=None, secgroup=None):
         client = self.network_client
         rules = []
@@ -95,7 +73,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                        security_groups=None, isgateway=None):
 
         keypair = self.create_keypair()
-        if security_groups is None and not isgateway:
+        if security_groups is None:
             raise Exception("No security group")
 
         nics = list()
@@ -133,60 +111,77 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         workaround ip namespace
         """
         network, _, _ = \
-            self._create_networks(tenant['id'])
-
-        name = 'server-{tenant}-access_point-'.format(
-            tenant=tenant['name'])
+            self.create_networks(tenant_id=tenant)
+        name = 'access_point'
         name = data_utils.rand_name(name)
 
+        networks = self._get_tenant_networks(tenant)
+        if networks[0]['name'] != network['name']:
+            for i in xrange(len(networks)):
+                if networks[i]['name'] == \
+                        network['name'] and i != 0:
+                            net = networks[i]
+                            networks[i] = networks[0]
+                            networks[0] = net
+        self._create_security_group(tenant_id=tenant,
+                namestart='gateway')
+        security_groups = self._get_tenant_security_groups(tenant)
         serv_dict = self._create_server(name=name,
-                                        network=network,
+                                        networks=networks,
+                                        security_groups=security_groups,
                                         tenant=tenant,
                                         isgateway=True)
-        access_point = \
+        access_point_FIP = \
             self._assign_access_point_floating_ip(
                 serv_dict['server'],
                 network_name=network.name)
 
-        self._fix_access_point(access_point)
+        self._fix_access_point((access_point_FIP,
+                                serv_dict['server']),
+                                serv_dict['keypair'])
 
-        return access_point
+        return dict(server=serv_dict['server'],
+                    keypair=serv_dict['keypair'],
+                    FIP=access_point_FIP.floating_ip_address)
 
     def _assign_access_point_floating_ip(self, server, network_name):
         public_network_id = CONF.network.public_network_id
-        server_ip = server.networks[network_name][0]
+        server_ip = server['addresses'][network_name][0]['addr']
         port_id = self._get_custom_server_port_id(server,
                                                   ip_addr=server_ip)
         floating_ip = self._create_floating_ip(server,
                                                public_network_id,
-                                               port_id)
-        return Floating_IP_tuple(floating_ip, server)
+                                               port_id=port_id)
+        return floating_ip
 
-    def _fix_access_point(self, access_point):
+    def _fix_access_point(self, access_point, keypair):
         """
         Hotfix for cirros images
         """
-        server, access_point_ip = access_point.items()[0]
-        keypair = server.keypair
-        private_key = keypair.private_key
-
-        # should implement a wait for status "ACTIVE" function
-        access_point_ssh = self._ssh_to_server(access_point_ip,
-                                               private_key=private_key)
+        access_point_ip, server = access_point
+        private_key = keypair['private_key']
+        ip = access_point_ip.floating_ip_address
+        self.servers_client.wait_for_server_status(server_id=server['id'],
+                                                   status='ACTIVE')
+        access_point_ssh = remote_client.RemoteClient(
+                server=ip,
+                username='cirros',
+                password='cubswin:)',
+                pkey=private_key,
+                )
         # fix for cirros image in order to enable a second eth
-        for net in xrange(1, len(server.networks.keys())):
+        for net in xrange(1, len(server['addresses'].keys())):
             if access_point_ssh.exec_command(
                     "cat /sys/class/net/eth{0}/operstate".format(net)) \
-                    is not "up\n":
+                    is not 'up\n':
                 try:
-                    result = access_point_ssh.exec_command(
-                        "sudo /sbin/udhcpc -i eth{0}".format(net), 30)
+                    result = access_point_ssh.exec_command("sudo /sbin/udhcpc -i eth{0}".format(net),10)
                     LOG.info(result)
-                except NeutronClientException:
+                except exceptions.TimeoutException:
                     pass
 
-    def build_gateway(self, tenant):
-        return self._set_access_point(tenant)
+    def build_gateway(self, tenant_id):
+        return self._set_access_point(tenant_id)
 
     def setup_tunnel(self, tunnel_hops):
         """
@@ -227,11 +222,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
 
     def _get_tenant_networks(self, tenant=None):
         client = self.network_client
-        _, nets = client.list_networks()
+        _, nets = client.list_networks(tenant_id=tenant)
         return nets['networks']
 
     def _get_custom_server_port_id(self, server, ip_addr=None):
-        ports = self._list_ports(device_id=server.id)
+        ports = self._list_ports(device_id=server['id'])
         if ip_addr:
             for port in ports:
                 if port['fixed_ips'][0]['ip_address'] == ip_addr:
@@ -277,7 +272,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                             dns_nameservers=subnet['dns_nameservers'],
                             host_routes=subnet['host_routes'],
                         )
-                    subnet = self._create_subnet_from_body(subnet_dic)
+                    subnet = self._create_subnet(network=net, **subnet_dic)
                     for router in routers:
                         subnet.add_to_router(router.id)
 
@@ -286,22 +281,26 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                 if secgroup['name'] in [r['name'] for r in sgroups]:
                     sg = filter(lambda x: x['name'] == secgroup['name'], sgroups)[0]
                 else:
-                    sg = self._create_empty_security_group(self.tenant_id)
+                    sg = self._create_empty_security_group(tenant_id=self.tenant_id,
+                            namestart=secgroup['name'])
                     rules = \
                         self._create_security_group_rule_list(rule_dict=secgroup,
                                                               secgroup=sg)
             test_server = []
             for server in topology['servers']:
+                s_nets = []
+                for snet in server['networks']:
+                    s_nets.extend(self._get_network_by_name(snet['name']))
+                s_sg = []
+                for sg in server['security_groups']:
+                    s_sg.extend(self._get_security_group_by_name(sg['name']))
                 for x in range(server['quantity']):
                     name = data_utils.rand_name('server-smoke-')
-                    s_nets = []
-                    for snet in server['networks']:
-                        s_nets.extend(self._get_network_by_name(snet['name']))
-                    s_sg = []
-                    for sg in server['security_groups']:
-                        s_sg.extend(self._get_security_group_by_name(sg['name']))
                     test_server.append(self._create_server(name=name,
                                                            networks=s_nets,
                                                            security_groups=s_sg,
                                                            tenant=self.tenant_id))
+            if 'gateway' in topology.keys():
+                test_server.append(self.build_gateway(self.tenant_id))
+
             return test_server

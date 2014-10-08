@@ -18,15 +18,16 @@ import re
 
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura.midotools import helper
-from tempest.scenario.midokura.midotools import scenario
+from tempest.scenario.midokura import manager
 from tempest import test
 
 
 LOG = logging.getLogger(__name__)
 CIDR1 = "10.10.1.0/24"
+# path should be described in tempest.conf
+SCPATH = "network_scenarios/"
 
-
-class TestNetworkBasicVMConnectivity(scenario.TestScenario):
+class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
     """
         Scenario:
         A launched VM should get an ip address and
@@ -60,10 +61,7 @@ class TestNetworkBasicVMConnectivity(scenario.TestScenario):
 
     def setUp(self):
         super(TestNetworkBasicVMConnectivity, self).setUp()
-        self.security_group = \
-            self._create_security_group_neutron(tenant_id=self.tenant_id)
-        self._scenario_conf()
-        self.custom_scenario(self.scenario)
+        self.servers_and_keys = self.setup_topology('{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH))
 
     def _scenario_conf(self):
         serverB = {
@@ -94,16 +92,17 @@ class TestNetworkBasicVMConnectivity(scenario.TestScenario):
             'tenants': [tenantA],
         }
 
-    def _serious_test(self, remote_ip, pk):
+    def _serious_test(self, hops):
         LOG.info("Trying to get the list of ips")
-        try:
-            ssh_client = self.setup_tunnel([(remote_ip, pk)])
+        try:            
+            ssh_client = self.setup_tunnel(hops)
             net_info = ssh_client.get_ip_list()
             LOG.debug(net_info)
             pattern = re.compile(
                 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
             list = pattern.findall(net_info)
             LOG.debug(list)
+            remote_ip, _ = hops[-1]
             self.assertIn(remote_ip, list)
             route_out = ssh_client.exec_command("sudo /sbin/route -n")
             self._check_default_gateway(route_out, remote_ip)
@@ -125,15 +124,25 @@ class TestNetworkBasicVMConnectivity(scenario.TestScenario):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_network_basic_vmconnectivity(self):
-        ap_details = self.access_point.keys()[0]
-        networks = ap_details.networks
-        for server in self.servers:
+        ap_details = filter(lambda x:
+                x['server']['name'].startswith('access_point'),
+                self.servers_and_keys)[0]
+        ap = ap_details['server']
+        networks = ap['addresses']
+        hops=[(ap_details['FIP'], ap_details['keypair']['private_key'])]
+        #the access_point server should be the last one in the list
+        for pair in self.servers_and_keys[:-1]:
             # servers should only have 1 network
-            name = server.networks.keys()[0]
-            if any(i in networks.keys() for i in server.networks.keys()):
-                remote_ip = server.networks[name][0]
-                pk = self.servers[server].private_key
-                self._serious_test(remote_ip, pk)
+            if pair['server']['name'].startswith('access_point'):
+                continue
+            server = pair['server']
+            name = server['addresses'].keys()[0]
+            if any(i in networks.keys() for i in server['addresses'].keys()):
+                remote_ip = server['addresses'][name][0]['addr']
+                keypair = pair['keypair']
+                pk = keypair['private_key']
+                hops.append((remote_ip,pk))
+                self._serious_test(hops)
             else:
                 LOG.info("FAIL - No ip connectivity to the server ip: %s"
                          % server.networks[name][0])
