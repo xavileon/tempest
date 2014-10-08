@@ -100,7 +100,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
 
         nics = list()
         for net in networks:
-            nic = {'net-id': net['id']}
+            nic = {'uuid': net['id']}
             nics.append(nic)
 
         # it also has to include all secgroups and networks if its a gw
@@ -111,10 +111,10 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             sg = self._get_tenant_security_groups(tenant)['security_groups']
             security_groups = map(lambda x : x['name'], sg['security_groups'])
             for network in self._get_tenat_networks(tenant):
-                nics.append({'net-id': network['id']})
+                nics.append({'uuid': network['id']})
 
         create_kwargs = {
-            'nics': nics,
+            'networks': nics,
             'key_name': keypair['name'],
             'security_groups': security_groups,
         }
