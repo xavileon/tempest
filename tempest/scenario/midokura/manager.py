@@ -70,7 +70,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         return rules
 
     def _create_server(self, name, networks, tenant,
-                       security_groups=None, isgateway=None):
+                       security_groups=None):
 
         keypair = self.create_keypair()
         if security_groups is None:
@@ -80,16 +80,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         for net in networks:
             nic = {'uuid': net['id']}
             nics.append(nic)
-
-        # it also has to include all secgroups and networks if its a gw
-        # since we no longer store all the details in the instance
-        # we should find all sec groups and networks and add them to the list
-        # hence the gw should be the last server created in the scenario
-        if isgateway:
-            sg = self._get_tenant_security_groups(tenant)['security_groups']
-            security_groups = map(lambda x : x['name'], sg['security_groups'])
-            for network in self._get_tenat_networks(tenant):
-                nics.append({'uuid': network['id']})
 
         create_kwargs = {
             'networks': nics,
@@ -129,8 +119,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         serv_dict = self._create_server(name=name,
                                         networks=networks,
                                         security_groups=security_groups,
-                                        tenant=tenant,
-                                        isgateway=True)
+                                        tenant=tenant)
         access_point_FIP = \
             self._assign_access_point_floating_ip(
                 serv_dict['server'],
