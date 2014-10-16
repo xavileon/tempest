@@ -18,6 +18,7 @@ servers:
   networks:
   - name: netA
   quantity: 5
+  floating_ip: False
 
 networks:
 - name: netA

@@ -61,7 +61,8 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
 
     def setUp(self):
         super(TestNetworkBasicVMConnectivity, self).setUp()
-        self.servers_and_keys = self.setup_topology('{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH))
+        self.servers_and_keys = self.setup_topology(
+                '{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH))
 
     def _scenario_conf(self):
         serverB = {
@@ -129,7 +130,7 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
                 self.servers_and_keys)[0]
         ap = ap_details['server']
         networks = ap['addresses']
-        hops=[(ap_details['FIP'], ap_details['keypair']['private_key'])]
+        hops=[(ap_details['FIP'].floating_ip_address, ap_details['keypair']['private_key'])]
         #the access_point server should be the last one in the list
         for pair in self.servers_and_keys[:-1]:
             # servers should only have 1 network

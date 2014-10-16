@@ -13,36 +13,32 @@ servers:
 - image:
   flavor:
   security_groups:
-  - name: standard
+  - name: default
   keypair:
   networks:
   - name: netA
   quantity: 1
-  floating_ip: False
+  floating_ip: True
 
 networks:
 - name: netA
   router:external: False
   shared:
   subnets:
-  - name: subnetB
+  - name: subnetA
     cidr: 10.10.1.0/24
     ip_version: 4
     host_routes: []
     dns_nameservers:
     allocation_pools:
-    - start:
-      end:
-    routers: []
+    - start: 10.10.1.2
+      end: 10.10.1.254
+    routers:
+    - name: router_1
+      public: True
 
 security_groups:
-- description: SSH and ICMP
-  name: standard
-  security_group_rules:
-  - port_range_max: 22
-    port_range_min: 22
-    protocol: tcp
-  - protocol: icmp
+- description: default security group
+  name: default
 
-gateway: True
 

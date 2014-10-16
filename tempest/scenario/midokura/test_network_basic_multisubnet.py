@@ -35,7 +35,8 @@ class TestBasicMultisubnet(manager.AdvancedNetworkScenarioTest):
 
     def setUp(self):
         super(TestBasicMultisubnet, self).setUp()
-        self.servers_and_keys = self.setup_topology('{0}scenario_basic_multisubnet.yaml'.format(SCPATH))
+        self.servers_and_keys = self.setup_topology(
+                '{0}scenario_basic_multisubnet.yaml'.format(SCPATH))
 
     def _check_vm_assignation(self):
         s1 = 0

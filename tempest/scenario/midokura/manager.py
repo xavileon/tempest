@@ -69,8 +69,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     rules.append(sg_rule)
         return rules
 
-    def _create_server(self, name, networks, tenant,
-                       security_groups=None):
+    def _create_server(self, name, networks, 
+                       security_groups=None,
+                       has_FIP=False):
 
         keypair = self.create_keypair()
         if security_groups is None:
@@ -88,8 +89,14 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         }
         server = self.create_server(name=name,
                                     create_kwargs=create_kwargs)
+        access_point_FIP = None
+        if has_FIP:
+            network_names = self._get_network_by_name(networks[0]['name'])
+            access_point_FIP = self._assign_access_point_floating_ip(
+                    server=server,
+                    network_name=network_names[0]['name'])
 
-        return dict(server=server, keypair=keypair)
+        return dict(server=server, keypair=keypair, FIP=access_point_FIP)
 
     """
     GateWay methods
@@ -118,8 +125,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         security_groups = self._get_tenant_security_groups(tenant)
         serv_dict = self._create_server(name=name,
                                         networks=networks,
-                                        security_groups=security_groups,
-                                        tenant=tenant)
+                                        security_groups=security_groups)
         access_point_FIP = \
             self._assign_access_point_floating_ip(
                 serv_dict['server'],
@@ -131,7 +137,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
 
         return dict(server=serv_dict['server'],
                     keypair=serv_dict['keypair'],
-                    FIP=access_point_FIP.floating_ip_address)
+                    FIP=access_point_FIP)
 
     def _assign_access_point_floating_ip(self, server, network_name):
         public_network_id = CONF.network.public_network_id
@@ -214,6 +220,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         _, nets = client.list_networks(tenant_id=tenant)
         return nets['networks']
 
+    def _get_tenant_routers(self, tenant=None):
+        client = self.network_client
+        _, routers = client.list_routers()
+        return routers['routers']
+
     def _get_custom_server_port_id(self, server, ip_addr=None):
         ports = self._list_ports(device_id=server['id'])
         if ip_addr:
@@ -225,7 +236,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         return ports[0]['id']
 
     def _get_network_by_name(self, net_name):
-        nets = self._get_tenant_networks()
+        nets = self._get_tenant_networks(tenant=self.tenant_id)
         return filter(lambda x: x['name'].startswith(net_name), nets)
 
     def _get_security_group_by_name(self, sg_name):
@@ -246,10 +257,16 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                 for subnet in network['subnets']:
                     for router in subnet['routers']:
                         router_names = [r['name'] for r in
-                                        self.network_client.list_routers()['routers']]
+                                       self._get_tenant_routers()]
                         if not router['name'] in router_names:
-                            router = self._create_router(namestart=router['name'],
-                                                         tenant_id=self.tenant_id)
+                            if router['public']:
+                                router = self._get_router(
+                                        client=self.network_client,
+                                        tenant_id=self.tenant_id)
+                            else:
+                                router = self._create_router(
+                                        namestart=router['name'],
+                                        tenant_id=self.tenant_id)
                             routers.append(router)
                     subnet_dic = \
                         dict(
@@ -288,7 +305,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     test_server.append(self._create_server(name=name,
                                                            networks=s_nets,
                                                            security_groups=s_sg,
-                                                           tenant=self.tenant_id))
+                                                           has_FIP=server['floating_ip']))
             if 'gateway' in topology.keys():
                 test_server.append(self.build_gateway(self.tenant_id))
 
