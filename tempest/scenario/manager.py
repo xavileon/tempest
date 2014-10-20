@@ -562,7 +562,7 @@ class NetworkScenarioTest(ScenarioTest):
                     raise
         self.assertIsNotNone(result, 'Unable to allocate tenant network')
         subnet = net_resources.DeletableSubnet(client=client,
-                                                   **result['subnet'])
+                                               **result['subnet'])
         self.assertEqual(subnet.cidr, str_cidr)
         self.addCleanup(self.delete_wrapper, subnet.delete)
         return subnet
