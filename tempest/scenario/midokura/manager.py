@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import collections
 import yaml
 import os
 
@@ -24,14 +23,9 @@ from tempest.common.utils.linux import remote_client
 from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
-from tempest.services.network import resources as net_resources
-
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
-
-Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
-                                           ['floating_ip', 'server'])
 
 
 class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
@@ -69,10 +63,19 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     rules.append(sg_rule)
         return rules
 
-    def _create_server(self, name, networks, 
+    def _assign_floating_ip(self, server, network_name):
+        public_network_id = CONF.network.public_network_id
+        server_ip = server['addresses'][network_name][0]['addr']
+        port_id = self._get_custom_server_port_id(server,
+                                                  ip_addr=server_ip)
+        floating_ip = self._create_floating_ip(server,
+                                               public_network_id,
+                                               port_id=port_id)
+        return floating_ip
+
+    def _create_server(self, name, networks,
                        security_groups=None,
                        has_FIP=False):
-
         keypair = self.create_keypair()
         if security_groups is None:
             raise Exception("No security group")
@@ -89,14 +92,13 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         }
         server = self.create_server(name=name,
                                     create_kwargs=create_kwargs)
-        access_point_FIP = None
+        FIP = None
         if has_FIP:
             network_names = self._get_network_by_name(networks[0]['name'])
-            access_point_FIP = self._assign_access_point_floating_ip(
-                    server=server,
-                    network_name=network_names[0]['name'])
+            FIP = self._assign_floating_ip(server=server,
+                                           network_name=network_names[0]['name'])
 
-        return dict(server=server, keypair=keypair, FIP=access_point_FIP)
+        return dict(server=server, keypair=keypair, FIP=FIP)
 
     """
     GateWay methods
@@ -121,33 +123,17 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                             networks[i] = networks[0]
                             networks[0] = net
         self._create_security_group(tenant_id=tenant,
-                namestart='gateway')
+                                    namestart='gateway')
         security_groups = self._get_tenant_security_groups(tenant)
         serv_dict = self._create_server(name=name,
                                         networks=networks,
-                                        security_groups=security_groups)
-        access_point_FIP = \
-            self._assign_access_point_floating_ip(
-                serv_dict['server'],
-                network_name=network.name)
+                                        security_groups=security_groups,
+                                        has_FIP=True)
 
-        self._fix_access_point((access_point_FIP,
-                                serv_dict['server']),
-                                serv_dict['keypair'])
-
-        return dict(server=serv_dict['server'],
-                    keypair=serv_dict['keypair'],
-                    FIP=access_point_FIP)
-
-    def _assign_access_point_floating_ip(self, server, network_name):
-        public_network_id = CONF.network.public_network_id
-        server_ip = server['addresses'][network_name][0]['addr']
-        port_id = self._get_custom_server_port_id(server,
-                                                  ip_addr=server_ip)
-        floating_ip = self._create_floating_ip(server,
-                                               public_network_id,
-                                               port_id=port_id)
-        return floating_ip
+        tupla = (serv_dict['FIP'], serv_dict['server'])
+        self._fix_access_point(tupla,
+                               serv_dict['keypair'])
+        return serv_dict
 
     def _fix_access_point(self, access_point, keypair):
         """
@@ -158,7 +144,8 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         ip = access_point_ip.floating_ip_address
         self.servers_client.wait_for_server_status(server_id=server['id'],
                                                    status='ACTIVE')
-        access_point_ssh = remote_client.RemoteClient(
+        access_point_ssh = \
+            remote_client.RemoteClient(
                 server=ip,
                 username='cirros',
                 password='cubswin:)',
@@ -170,7 +157,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     "cat /sys/class/net/eth{0}/operstate".format(net)) \
                     is not 'up\n':
                 try:
-                    result = access_point_ssh.exec_command("sudo /sbin/udhcpc -i eth{0}".format(net),10)
+                    result = access_point_ssh.exec_command(
+                                    "sudo /sbin/cirros-dhcpc up eth{0}".format(net), 
+                                    10)
                     LOG.info(result)
                 except exceptions.TimeoutException:
                     pass
@@ -211,18 +200,24 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Get Methods
     """
     def _get_tenant_security_groups(self, tenant=None):
+        if not tenant:
+            tenant = self.tenant_id
         client = self.network_client
         _, sgs = client.list_security_groups()
         return sgs['security_groups']
 
     def _get_tenant_networks(self, tenant=None):
+        if not tenant:
+            tenant = self.tenant_id
         client = self.network_client
         _, nets = client.list_networks(tenant_id=tenant)
         return nets['networks']
 
     def _get_tenant_routers(self, tenant=None):
+        if not tenant:
+            tenant = self.tenant_id
         client = self.network_client
-        _, routers = client.list_routers()
+        _, routers = client.list_routers(tenant_id=tenant)
         return routers['routers']
 
     def _get_custom_server_port_id(self, server, ip_addr=None):
@@ -240,7 +235,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         return filter(lambda x: x['name'].startswith(net_name), nets)
 
     def _get_security_group_by_name(self, sg_name):
-        sgs = self._get_tenant_security_groups()
+        sgs = self._get_tenant_security_groups(tenant=self.tenant_id)
         return filter(lambda x: x['name'].startswith(sg_name), sgs)
 
     """
@@ -288,7 +283,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     sg = filter(lambda x: x['name'] == secgroup['name'], sgroups)[0]
                 else:
                     sg = self._create_empty_security_group(tenant_id=self.tenant_id,
-                            namestart=secgroup['name'])
+                                                           namestart=secgroup['name'])
                     rules = \
                         self._create_security_group_rule_list(rule_dict=secgroup,
                                                               secgroup=sg)
@@ -306,7 +301,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                                            networks=s_nets,
                                                            security_groups=s_sg,
                                                            has_FIP=server['floating_ip']))
-            if 'gateway' in topology.keys():
+            if 'gateway' in topology.keys() and topology['gateway']:
                 test_server.append(self.build_gateway(self.tenant_id))
 
             return test_server

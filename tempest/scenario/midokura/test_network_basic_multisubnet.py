@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 CIDR1 = "10.10.10.8/29"
 CIDR2 = "10.10.1.8/29"
 # path should be described in tempest.conf
-SCPATH = "network_scenarios/"
+SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
 
 
 class TestBasicMultisubnet(manager.AdvancedNetworkScenarioTest):

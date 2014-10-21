@@ -23,9 +23,9 @@ from tempest import test
 
 
 LOG = logging.getLogger(__name__)
-CIDR1 = "10.10.1.0/24"
 # path should be described in tempest.conf
-SCPATH = "network_scenarios/"
+SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+
 
 class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
     """
@@ -64,38 +64,9 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
         self.servers_and_keys = self.setup_topology(
                 '{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH))
 
-    def _scenario_conf(self):
-        serverB = {
-            'floating_ip': False,
-            'sg': None,
-        }
-        subnetA = {
-            "network_id": None,
-            "ip_version": 4,
-            "cidr": CIDR1,
-            "allocation_pools": None,
-            "routers": None,
-            "dns": [],
-            "routes": [],
-        }
-        networkA = {
-            'subnets': [subnetA],
-            'servers': [serverB],
-        }
-        tenantA = {
-            'networks': [networkA],
-            'tenant_id': None,
-            'type': 'default',
-            'hasgateway': True,
-            'MasterKey': False,
-        }
-        self.scenario = {
-            'tenants': [tenantA],
-        }
-
     def _serious_test(self, hops):
         LOG.info("Trying to get the list of ips")
-        try:            
+        try:           
             ssh_client = self.setup_tunnel(hops)
             net_info = ssh_client.get_ip_list()
             LOG.debug(net_info)
@@ -132,15 +103,14 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
         networks = ap['addresses']
         hops=[(ap_details['FIP'].floating_ip_address, ap_details['keypair']['private_key'])]
         #the access_point server should be the last one in the list
-        for pair in self.servers_and_keys[:-1]:
-            # servers should only have 1 network
-            if pair['server']['name'].startswith('access_point'):
+        for element in self.servers_and_keys[:-1]:
+            if element['server']['name'].startswith('access_point'):
                 continue
-            server = pair['server']
+            server = element['server']
             name = server['addresses'].keys()[0]
             if any(i in networks.keys() for i in server['addresses'].keys()):
                 remote_ip = server['addresses'][name][0]['addr']
-                keypair = pair['keypair']
+                keypair = element['keypair']
                 pk = keypair['private_key']
                 hops.append((remote_ip,pk))
                 self._serious_test(hops)
