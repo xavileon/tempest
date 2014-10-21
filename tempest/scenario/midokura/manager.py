@@ -239,6 +239,15 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         return filter(lambda x: x['name'].startswith(sg_name), sgs)
 
     """
+    Tool methods
+    """
+    def _toggle_dhcp(self, subnet_id, enable=False):
+        _, result = self.network_client.update_subnet(subnet_id, enable_dhcp=enable)
+        subnet = result["subnet"]
+        self.assertEqual(subnet["enable_dhcp"], enable)
+        LOG.debug(result)
+
+    """
     YAML parsing methods
     """
     def setup_topology(self, yaml_topology):
