@@ -10,8 +10,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-__author__ = 'Albert'
-__email__ = "albert.vico@midokura.com"
 
 import re
 
@@ -96,9 +94,7 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_network_basic_vmconnectivity(self):
-        ap_details = filter(lambda x:
-                x['server']['name'].startswith('access_point'),
-                self.servers_and_keys)[0]
+        ap_details = self.servers_and_keys[-1]
         ap = ap_details['server']
         networks = ap['addresses']
         hops=[(ap_details['FIP'].floating_ip_address, ap_details['keypair']['private_key'])]

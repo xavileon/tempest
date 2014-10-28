@@ -17,7 +17,7 @@ servers:
   keypair:
   networks:
   - name: netA
-  quantity: 1
+  quantity: 2
   floating_ip: False
 
 networks:

@@ -246,6 +246,27 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         subnet = result["subnet"]
         self.assertEqual(subnet["enable_dhcp"], enable)
         LOG.debug(result)
+    
+    def _ping_through_gateway(self, hops, destination, should_succed=True):
+        LOG.info("Trying to ping between %s and %s"
+                 % (hops[-1][0], destination[0]))
+        ssh_client = self.setup_tunnel(hops)
+        self.assertTrue(self._check_remote_connectivity(
+             ssh_client, destination[0], should_succed))
+
+    def _ssh_through_gateway(self, origin, destination):
+        try:
+            origin.append(destination)
+            ssh_client = self.setup_tunnel(origin)
+            try:
+                result = ssh_client.get_ip_list()
+                LOG.info(result)
+                self.assertIn(destination[0], result)
+            except exceptions.SSHExecCommandFailed as e:
+                LOG.info(e.args)
+        except Exception as inst:
+            LOG.info(inst.args)
+            raise
 
     """
     YAML parsing methods
