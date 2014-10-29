@@ -75,9 +75,9 @@ class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
                 ip_pk.append((remote_ip, pk))
             else:
                 LOG.info("FAIL - No ip connectivity to the server ip: %s"
-                         % server.networks[name][0])
+                         % server['addresses'][name][0]['addr'])
                 raise Exception("FAIL - No ip for this network : %s"
-                            % server.networks)
+                            % server['addresses'][name])
         for pair in itertools.permutations(ip_pk):
             LOG.info("Checking ssh between %s %s"
                      % (pair[0][0], pair[1][0]))

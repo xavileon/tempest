@@ -23,6 +23,7 @@ from tempest.common.utils.linux import remote_client
 from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
+from tempest.services.network import resources as net_resources
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
@@ -84,7 +85,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         for net in networks:
             nic = {'uuid': net['id']}
             nics.append(nic)
-
         create_kwargs = {
             'networks': nics,
             'key_name': keypair['name'],
@@ -230,6 +230,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                          "Unable to determine which port to target.")
         return ports[0]['id']
 
+    def _get_tenant_router_by_name(self, r_name):
+        routers = self._get_tenant_routers()
+        d_router = filter(lambda x: x['name'].startswith(r_name), routers)[0]
+        return net_resources.AttributeDict(**d_router)
+    
     def _get_network_by_name(self, net_name):
         nets = self._get_tenant_networks(tenant=self.tenant_id)
         return filter(lambda x: x['name'].startswith(net_name), nets)
@@ -275,15 +280,16 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         with open(os.path.abspath(yaml_topology), 'r') as yaml_topology:
             topology = yaml.load(yaml_topology)
             networks = [n for n in topology['networks']]
-            routers = []
             for network in networks:
                 net = self._create_network(tenant_id=self.tenant_id,
                                            namestart=network['name'])
                 for subnet in network['subnets']:
+                    routers = []
                     for router in subnet['routers']:
                         router_names = [r['name'] for r in
                                        self._get_tenant_routers()]
-                        if not router['name'] in router_names:
+                        if not any(map(lambda x: router['name'] in x,
+                            router_names)):
                             if router['public']:
                                 router = self._get_router(
                                         client=self.network_client,
@@ -292,7 +298,10 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                 router = self._create_router(
                                         namestart=router['name'],
                                         tenant_id=self.tenant_id)
-                            routers.append(router)
+                        else:
+                            router = \
+                            self._get_tenant_router_by_name(router['name'])
+                        routers.append(router)
                     subnet_dic = \
                         dict(
                             name=subnet['name'],
@@ -304,6 +313,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                             host_routes=subnet['host_routes'],
                         )
                     subnet = self._create_subnet(network=net, **subnet_dic)
+                    
                     for router in routers:
                         subnet.add_to_router(router.id)
 
@@ -317,7 +327,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     rules = \
                         self._create_security_group_rule_list(rule_dict=secgroup,
                                                               secgroup=sg)
-            test_server = []
+            test_topology = []
             for server in topology['servers']:
                 s_nets = []
                 for snet in server['networks']:
@@ -327,11 +337,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     s_sg.extend(self._get_security_group_by_name(sg['name']))
                 for x in range(server['quantity']):
                     name = data_utils.rand_name('server-smoke-')
-                    test_server.append(self._create_server(name=name,
+                    test_topology.append(self._create_server(name=name,
                                                            networks=s_nets,
                                                            security_groups=s_sg,
                                                            has_FIP=server['floating_ip']))
             if 'gateway' in topology.keys() and topology['gateway']:
-                test_server.append(self.build_gateway(self.tenant_id))
+                test_topology.append(self.build_gateway(self.tenant_id))
 
-            return test_server
+            return test_topology
