@@ -12,7 +12,7 @@
 #    under the License.
 
 import re
-
+import os
 
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura.midotools import helper
@@ -22,7 +22,7 @@ from tempest import test
 
 LOG = logging.getLogger(__name__)
 # path should be described in tempest.conf
-SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+SCPATH = "network_scenarios/"
 
 
 class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
@@ -60,7 +60,7 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestNetworkBasicVMConnectivity, self).setUp()
         self.servers_and_keys = self.setup_topology(
-                '{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH))
+            os.path.abspath('{0}scenario_basic_vmconnectivity.yaml'.format(SCPATH)))
 
     def _serious_test(self, hops):
         LOG.info("Trying to get the list of ips")

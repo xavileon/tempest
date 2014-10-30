@@ -11,13 +11,14 @@
 #    under the License.
 
 import itertools
+import os
 
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura import manager
 from tempest import test
 
 LOG = logging.getLogger(__name__)
-SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+SCPATH = "network_scenarios/"
 
 
 class TestNetworkBasicSecurityGroups(manager.AdvancedNetworkScenarioTest):
@@ -51,7 +52,7 @@ class TestNetworkBasicSecurityGroups(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestNetworkBasicSecurityGroups, self).setUp()
         self.servers_and_keys = self.setup_topology(
-                '{0}scenario_basic_security_groups.yaml'.format(SCPATH))
+            os.path.abspath('{0}scenario_basic_security_groups.yaml'.format(SCPATH)))
         
     def _create_vm3_and_sg1(self):
         # creates the vm3 and assigns it sc "sg1"

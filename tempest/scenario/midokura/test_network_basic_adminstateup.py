@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from tempest import config
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura import manager
@@ -17,10 +19,10 @@ from tempest import test
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
-CIDR1 = "10.10.1.0/24"
 
 # path should be described in tempest.conf
 SCPATH = "network_scenarios/"
+
 
 class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
 
@@ -32,7 +34,7 @@ class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestAdminStateUp, self).setUp()
         self.servers_and_keys = self.setup_topology(
-            '{0}scenario_basic_adminstateup.yaml'.format(SCPATH))
+            os.path.abspath('{0}scenario_basic_adminstateup.yaml'.format(SCPATH)))
 
     def _check_connection(self, should_connect=True):
         ssh_login = CONF.compute.image_ssh_user

@@ -233,7 +233,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     def _get_tenant_router_by_name(self, r_name):
         routers = self._get_tenant_routers()
         d_router = filter(lambda x: x['name'].startswith(r_name), routers)[0]
-        return net_resources.AttributeDict(**d_router)
+        return net_resources.DeletableRouter(**d_router)
     
     def _get_network_by_name(self, net_name):
         nets = self._get_tenant_networks(tenant=self.tenant_id)
@@ -241,7 +241,8 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
 
     def _get_security_group_by_name(self, sg_name):
         sgs = self._get_tenant_security_groups(tenant=self.tenant_id)
-        return filter(lambda x: x['name'].startswith(sg_name), sgs)
+        sg = filter(lambda x: x['name'].startswith(sg_name), sgs)[0]
+        return net_resources.DeletableSecurityGroup(**sg)
 
     """
     Tool methods
@@ -320,7 +321,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             for secgroup in topology['security_groups']:
                 sgroups = self._get_tenant_security_groups(self.tenant_id)
                 if secgroup['name'] in [r['name'] for r in sgroups]:
-                    sg = filter(lambda x: x['name'] == secgroup['name'], sgroups)[0]
+                    sg = filter(lambda x: x['name'].startswith(secgroup['name']), sgroups)[0]
                 else:
                     sg = self._create_empty_security_group(tenant_id=self.tenant_id,
                                                            namestart=secgroup['name'])
@@ -334,7 +335,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                     s_nets.extend(self._get_network_by_name(snet['name']))
                 s_sg = []
                 for sg in server['security_groups']:
-                    s_sg.extend(self._get_security_group_by_name(sg['name']))
+                    s_sg.append(self._get_security_group_by_name(sg['name']))
                 for x in range(server['quantity']):
                     name = data_utils.rand_name('server-smoke-')
                     test_topology.append(self._create_server(name=name,

@@ -11,13 +11,14 @@
 #    under the License.
 
 import re
+import os
 
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura import manager
 from tempest import test
 
 LOG = logging.getLogger(__name__)
-SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+SCPATH = "network_scenarios/"
 
 
 class TestNetworkBasicDhcpDisable(manager.AdvancedNetworkScenarioTest):
@@ -44,7 +45,7 @@ class TestNetworkBasicDhcpDisable(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestNetworkBasicDhcpDisable, self).setUp()
         self.servers_and_keys = \
-        self.setup_topology('{0}scenario_basic_dhcp_disable.yaml'.format(SCPATH))
+            self.setup_topology(os.path.abspath('{0}scenario_basic_dhcp_disable.yaml'.format(SCPATH)))
 
     # this should be ported to "linux_client" class
     def _do_dhcp_lease(self, hops, timeout=0):

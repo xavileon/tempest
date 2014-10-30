@@ -9,19 +9,17 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-__author__ = 'Albert'
-__email__ = "albert.vico@midokura.com"
 
 
 import itertools
+import os
 
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura import manager
 from tempest import test
 
 LOG = logging.getLogger(__name__)
-CIDR1 = "10.10.1.0/24"
-SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+SCPATH = "network_scenarios/"
 
 
 class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
@@ -52,7 +50,7 @@ class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestNetworkBasicInterVMConnectivity, self).setUp()
         self.servers_and_keys = self.setup_topology(
-                '{0}scenario_basic_inter_vmconnectivity.yaml'.format(SCPATH))
+                os.path.abspath('{0}scenario_basic_inter_vmconnectivity.yaml'.format(SCPATH)))
         
    
     @test.attr(type='smoke')

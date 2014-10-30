@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura.midotools import helper
 from tempest.scenario.midokura import manager
@@ -20,7 +22,7 @@ from tempest import test
 LOG = logging.getLogger(__name__)
 CIDR1 = "10.10.10.0/24"
 # path should be described in tempest.conf
-SCPATH = "/opt/stack/tempest/tempest/scenario/midokura/network_scenarios/"
+SCPATH = "network_scenarios/"
 
 
 class TestNetworkBasicDhcpLease(manager.AdvancedNetworkScenarioTest):
@@ -54,40 +56,8 @@ class TestNetworkBasicDhcpLease(manager.AdvancedNetworkScenarioTest):
 
     def setUp(self):
         super(TestNetworkBasicDhcpLease, self).setUp()
-        self.servers_and_keys = self.setup_topology('{0}scenario_basic_dhcp.yaml'.format(SCPATH))
-
-    def _scenario_conf(self):
-        serverB = {
-            'floating_ip': False,
-            'sg': None,
-        }
-        subnetA = {
-            "network_id": None,
-            "ip_version": 4,
-            "cidr": CIDR1,
-            "allocation_pools": None,
-            "dns": ["8.8.8.8"],
-            "routes": [
-                        {
-                            "nexthop": "10.10.10.10",
-                            "destination": "172.20.0.0/24"
-                        }],
-            "routers": None,
-        }
-        networkA = {
-            'subnets': [subnetA],
-            'servers': [serverB],
-        }
-        tenantA = {
-            'networks': [networkA],
-            'tenant_id': None,
-            'type': 'default',
-            'hasgateway': True,
-            'MasterKey': False,
-        }
-        self.scenario = {
-            'tenants': [tenantA],
-        }
+        self.servers_and_keys = \
+            self.setup_topology(os.path.abspath('{0}scenario_basic_dhcp.yaml'.format(SCPATH)))
 
     def _check_routes(self, hops):
         LOG.info("Obtaining the routes")
