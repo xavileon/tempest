@@ -22,7 +22,7 @@ from tempest import test
 
 LOG = logging.getLogger(__name__)
 # path should be described in tempest.conf
-SCPATH = "network_scenarios/"
+SCPATH = "tempest/scenario/midokura/network_scenarios/"
 
 
 class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):

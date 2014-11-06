@@ -18,7 +18,7 @@ from tempest.scenario.midokura import manager
 from tempest import test
 
 LOG = logging.getLogger(__name__)
-SCPATH = "network_scenarios/"
+SCPATH = "tempest/scenario/midokura/network_scenarios/"
 
 
 class TestNetworkAdvancedInterVMConnectivity(

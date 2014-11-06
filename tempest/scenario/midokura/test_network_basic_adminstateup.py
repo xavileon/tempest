@@ -21,7 +21,7 @@ CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 # path should be described in tempest.conf
-SCPATH = "network_scenarios/"
+SCPATH = "tempest/scenario/midokura/network_scenarios/"
 
 
 class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
