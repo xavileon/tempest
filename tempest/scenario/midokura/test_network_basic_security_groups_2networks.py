@@ -18,7 +18,7 @@ from tempest import test
 
 
 LOG = logging.getLogger(__name__)
-SCPATH = "tempest/scenario/midokura/network_scenarios/"
+SCPATH = "/network_scenarios/"
 
 
 class TestNetworkAdvancedSecurityGroups2Networks(

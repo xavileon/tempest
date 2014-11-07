@@ -22,7 +22,7 @@ from tempest import test
 LOG = logging.getLogger(__name__)
 CIDR1 = "10.10.10.0/24"
 # path should be described in tempest.conf
-SCPATH = "tempest/scenario/midokura/network_scenarios/"
+SCPATH = "/network_scenarios/"
 
 
 class TestNetworkBasicDhcpLease(manager.AdvancedNetworkScenarioTest):

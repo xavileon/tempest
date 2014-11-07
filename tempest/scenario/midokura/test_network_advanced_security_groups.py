@@ -20,7 +20,7 @@ from tempest import test
 
 LOG = logging.getLogger(__name__)
 CONF = config.CONF
-SCPATH = "tempest/scenario/midokura/network_scenarios/"
+SCPATH = "/network_scenarios/"
 
 
 class TestNetworkAdvancedSecurityGroups(manager.AdvancedNetworkScenarioTest):
