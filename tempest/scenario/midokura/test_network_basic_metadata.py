@@ -10,8 +10,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
 from tempest import config
 from tempest.openstack.common import log as logging
 from tempest.scenario.midokura import manager
@@ -20,7 +18,7 @@ from tempest import test
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
-SCPATH = "tempest/scenario/midokura/network_scenarios/"
+SCPATH = "/network_scenarios/"
 
 
 class TestNetworkBasicMetaData(manager.AdvancedNetworkScenarioTest):
@@ -34,7 +32,7 @@ class TestNetworkBasicMetaData(manager.AdvancedNetworkScenarioTest):
         super(TestNetworkBasicMetaData, self).setUp()
         self.servers_and_keys = \
             self.setup_topology(
-                os.path.abspath('{0}scenario_basic_metadata.yaml'.format(SCPATH)))
+                '{0}scenario_basic_metadata.yaml'.format(SCPATH))
 
     def _check_metadata(self):
         ssh_login = CONF.compute.image_ssh_user

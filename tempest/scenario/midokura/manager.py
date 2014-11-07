@@ -273,12 +273,19 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         except Exception as inst:
             LOG.info(inst.args)
             raise
-
+    
+    def _locate_file(self, path):
+        realpath = os.getcwd()
+        for root, dirs, _ in os.walk(realpath):
+            if path in dirs:
+                return os.path.join(root,path)
     """
     YAML parsing methods
     """
     def setup_topology(self, yaml_topology):
-        with open(os.path.abspath(yaml_topology), 'r') as yaml_topology:
+        mpath = self._locate_file(yaml_topology.split('/')[-2])
+        fullpath = os.path.join(mpath, yaml_topology.split('/')[-1])
+        with open(fullpath, 'r') as yaml_topology:
             topology = yaml.load(yaml_topology)
             networks = [n for n in topology['networks']]
             for network in networks:
