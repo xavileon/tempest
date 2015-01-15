@@ -67,10 +67,10 @@ class TestNetworkAdvancedSecurityGroups2Networks(
                     'port_range_min': 8,
                     'port_range_max': None, },
                     {
-                    'direction': 'ingress',
-                    'protocol': 'icmp',
-                    'port_range_min': 8,
-                    'port_range_max': None,
+                        'direction': 'ingress',
+                        'protocol': 'icmp',
+                        'port_range_min': 8,
+                        'port_range_max': None,
                     }]
         sg = self._get_security_group_by_name("sg")
         for rule in rulesets:

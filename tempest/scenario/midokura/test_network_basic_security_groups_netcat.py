@@ -83,7 +83,6 @@ class TestNetworkBasicSecurityGroupsNetcat(
         LOG.info(result)
         self.assertEqual("123\n", result)
 
-
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_network_basic_netcat_udp(self):

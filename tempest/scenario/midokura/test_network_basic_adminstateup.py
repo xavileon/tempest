@@ -34,7 +34,8 @@ class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestAdminStateUp, self).setUp()
         self.servers_and_keys = self.setup_topology(
-            os.path.abspath('{0}scenario_basic_adminstateup.yaml'.format(SCPATH)))
+            os.path.abspath(
+                '{0}scenario_basic_adminstateup.yaml'.format(SCPATH)))
 
     def _check_connection(self, should_connect=True):
         ssh_login = CONF.compute.image_ssh_user
@@ -97,4 +98,3 @@ class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
         self._check_vm_connectivity_port()
         self._check_connection(True)
         LOG.info("End of Port test")
-

@@ -57,7 +57,8 @@ class TestNetworkAdvancedSecurityGroups(manager.AdvancedNetworkScenarioTest):
     def setUp(self):
         super(TestNetworkAdvancedSecurityGroups, self).setUp()
         self.servers_and_keys = self.setup_topology(
-            os.path.abspath('{0}scenario_advanced_security_groups.yaml'.format(SCPATH)))
+            os.path.abspath(
+                '{0}scenario_advanced_security_groups.yaml'.format(SCPATH)))
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
@@ -69,10 +70,10 @@ class TestNetworkAdvancedSecurityGroups(manager.AdvancedNetworkScenarioTest):
                     'port_range_max': None,
                     },
                     {
-                    'direction': 'ingress',
-                    'protocol': 'icmp',
-                    'port_range_min': 8,
-                    'port_range_max': None,
+                        'direction': 'ingress',
+                        'protocol': 'icmp',
+                        'port_range_min': 8,
+                        'port_range_max': None,
                     }]
         sg = self._get_security_group_by_name("sg")
         for rule in rulesets:
