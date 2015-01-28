@@ -116,7 +116,8 @@ def fix_tempest_conf(network_client):
     # setup network extensions
     to_string = ""
     for ex in extensions[:-1]:
-        to_string = str.format("{0},{1}", ex, to_string)
+        if ex != "lbaas" or ex != "fwaas":
+            to_string = str.format("{0},{1}", ex, to_string)
     to_string = str.format("{0}{1}", to_string, extensions[-1])
 
     if CONF.network_feature_enabled.api_extensions != to_string:
