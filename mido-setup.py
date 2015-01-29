@@ -111,9 +111,10 @@ def fix_tempest_conf(network_client):
 
     # get neutron suported extensions
     extensions_dict = network_client.list_extensions()
-
-    extensions = [x['alias'] for x in extensions_dict['extensions']]
+    extensions_unfiltered = [x['alias'] for x in extensions_dict['extensions']]
     # setup network extensions
+    extensions = [x for x in extensions_unfiltered if x not in
+    ['lbaas','fwaas']]
     to_string = ""
     for ex in extensions[:-1]:
         if ex != "lbaas" or ex != "fwaas":
