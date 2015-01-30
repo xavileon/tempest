@@ -37,10 +37,10 @@ class TestNetworkBasicDhcpDisable(manager.AdvancedNetworkScenarioTest):
             can't renew the dhcp
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicDhcpDisable, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicDhcpDisable, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicDhcpDisable, self).setUp()

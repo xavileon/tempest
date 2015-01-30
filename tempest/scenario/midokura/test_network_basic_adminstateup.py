@@ -26,10 +26,10 @@ SCPATH = "/network_scenarios/"
 
 class TestAdminStateUp(manager.AdvancedNetworkScenarioTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestAdminStateUp, cls).setUpClass()
-        cls.servers_and_keys = []
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestAdminStateUp, cls).setUpClass()
+#        cls.servers_and_keys = []
 
     def setUp(self):
         super(TestAdminStateUp, self).setUp()

@@ -52,10 +52,10 @@ class TestNetworkBasicMultitenants(manager.AdvancedNetworkScenarioTest):
         should succeed
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicMultitenants, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicMultitenants, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicMultitenants, self).setUp()

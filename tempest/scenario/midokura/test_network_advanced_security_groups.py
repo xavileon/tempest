@@ -49,10 +49,10 @@ class TestNetworkAdvancedSecurityGroups(manager.AdvancedNetworkScenarioTest):
             -ping does work
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkAdvancedSecurityGroups, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkAdvancedSecurityGroups, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkAdvancedSecurityGroups, self).setUp()

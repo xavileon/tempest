@@ -46,10 +46,10 @@ class TestNetworkAdvancedMetadata(manager.AdvancedNetworkScenarioTest):
         should return its instance id
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkAdvancedMetadata, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkAdvancedMetadata, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkAdvancedMetadata, self).setUp()

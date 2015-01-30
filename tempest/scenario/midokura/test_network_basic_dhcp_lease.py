@@ -49,10 +49,10 @@ class TestNetworkBasicDhcpLease(manager.AdvancedNetworkScenarioTest):
             Packets with the routes and the dns entry should reach the vm.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicDhcpLease, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicDhcpLease, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicDhcpLease, self).setUp()

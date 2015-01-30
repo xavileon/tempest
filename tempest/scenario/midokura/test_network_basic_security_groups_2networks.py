@@ -48,10 +48,10 @@ class TestNetworkAdvancedSecurityGroups2Networks(
             ping does work
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkAdvancedSecurityGroups2Networks, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkAdvancedSecurityGroups2Networks, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkAdvancedSecurityGroups2Networks, self).setUp()

@@ -44,10 +44,10 @@ class TestNetworkBasicSecurityGroupsNetcat(
             check B receives "123"
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicSecurityGroupsNetcat, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicSecurityGroupsNetcat, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicSecurityGroupsNetcat, self).setUp()

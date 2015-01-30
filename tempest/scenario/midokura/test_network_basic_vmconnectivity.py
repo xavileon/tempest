@@ -52,10 +52,10 @@ class TestNetworkBasicVMConnectivity(manager.AdvancedNetworkScenarioTest):
         VM should get a route for 169.254.169.254 (on non-cirros )
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicVMConnectivity, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicVMConnectivity, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicVMConnectivity, self).setUp()

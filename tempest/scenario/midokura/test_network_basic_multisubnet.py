@@ -28,10 +28,10 @@ CIDR1 = "10.10.10.8/29"
 class TestBasicMultisubnet(
         manager.AdvancedNetworkScenarioTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestBasicMultisubnet, cls).setUpClass()
-        cls.servers_and_keys = []
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestBasicMultisubnet, cls).setUpClass()
+#        cls.servers_and_keys = []
 
     def setUp(self):
         super(TestBasicMultisubnet, self).setUp()

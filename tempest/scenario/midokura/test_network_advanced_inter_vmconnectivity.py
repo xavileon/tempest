@@ -47,10 +47,10 @@ class TestNetworkAdvancedInterVMConnectivity(
         SSH should work.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkAdvancedInterVMConnectivity, cls).setUpClass()
-        cls.check_preconditions()
+    # @classmethod
+    # def setUpClass(cls):
+    #   super(TestNetworkAdvancedInterVMConnectivity, cls).setUpClass()
+    #   cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkAdvancedInterVMConnectivity, self).setUp()

@@ -42,10 +42,10 @@ class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
         Expected results:
         ping works
     """
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicInterVMConnectivity, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicInterVMConnectivity, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicInterVMConnectivity, self).setUp()

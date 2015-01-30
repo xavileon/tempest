@@ -53,10 +53,10 @@ class TestNetworkBasicMultitenantsFIP(manager.AdvancedNetworkScenarioTest):
         should succeed
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicMultitenantsFIP, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#   def setUpClass(cls):
+#       super(TestNetworkBasicMultitenantsFIP, cls).setUpClass()
+#      cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicMultitenantsFIP, self).setUp()

@@ -36,19 +36,25 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Base class for all Midokura network scenario tests
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(AdvancedNetworkScenarioTest, cls).setUpClass()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(AdvancedNetworkScenarioTest, cls).setUpClass()
+
+#    @classmethod
+#    def tearDownClass(cls):
+#        try:
+#            super(AdvancedNetworkScenarioTest, cls).tearDownClass()
+#        finally:
+#            cls.clear_creds()
+
+#    @classmethod
+#    def clear_creds(cls):
+#        TA = admintools.TenantAdmin()
+#        TA.teardown_tenants()
 
     @classmethod
-    def tearDownClass(cls):
-        try:
-            super(AdvancedNetworkScenarioTest, cls).tearDownClass()
-        finally:
-            cls.clear_creds()
-
-    @classmethod
-    def clear_creds(cls):
+    def clear_isolated_creds(cls):
+        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
         TA = admintools.TenantAdmin()
         TA.teardown_tenants()
 

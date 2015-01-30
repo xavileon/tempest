@@ -44,10 +44,10 @@ class TestNetworkBasicSecurityGroups(manager.AdvancedNetworkScenarioTest):
             vm3 can ping to vm1 and vm2 but not vice versa
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicSecurityGroups, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#        super(TestNetworkBasicSecurityGroups, cls).setUpClass()
+#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicSecurityGroups, self).setUp()

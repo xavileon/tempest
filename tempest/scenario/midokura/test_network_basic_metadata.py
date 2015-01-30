@@ -23,10 +23,10 @@ SCPATH = "/network_scenarios/"
 
 class TestNetworkBasicMetaData(manager.AdvancedNetworkScenarioTest):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestNetworkBasicMetaData, cls).setUpClass()
-        cls.check_preconditions()
+#    @classmethod
+#    def setUpClass(cls):
+#      super(TestNetworkBasicMetaData, cls).setUpClass()
+#      cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicMetaData, self).setUp()
