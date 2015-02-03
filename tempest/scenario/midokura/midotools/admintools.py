@@ -31,6 +31,8 @@ class TenantAdmin(object):
         # Create a tenant that is enabled
         if not name:
             name = data_utils.rand_name(name='tenant-')
+        else:
+            name = data_utils.rand_name(name)
         if not desc:
             desc = data_utils.rand_name('desc_')
         tenant = self.client.create_tenant(
