@@ -48,11 +48,6 @@ class TestNetworkAdvancedSecurityGroups2Networks(
             ping does work
     """
 
-#    @classmethod
-#    def setUpClass(cls):
-#        super(TestNetworkAdvancedSecurityGroups2Networks, cls).setUpClass()
-#        cls.check_preconditions()
-
     def setUp(self):
         super(TestNetworkAdvancedSecurityGroups2Networks, self).setUp()
         self.servers_and_keys = self.setup_topology(
@@ -67,10 +62,10 @@ class TestNetworkAdvancedSecurityGroups2Networks(
                     'port_range_min': 8,
                     'port_range_max': None, },
                     {
-                        'direction': 'ingress',
-                        'protocol': 'icmp',
-                        'port_range_min': 8,
-                        'port_range_max': None,
+                    'direction': 'ingress',
+                    'protocol': 'icmp',
+                    'port_range_min': 8,
+                    'port_range_max': None,
                     }]
         sg = self._get_security_group_by_name("sg")
         for rule in rulesets:

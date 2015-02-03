@@ -42,10 +42,6 @@ class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
         Expected results:
         ping works
     """
-#    @classmethod
-#    def setUpClass(cls):
-#        super(TestNetworkBasicInterVMConnectivity, cls).setUpClass()
-#        cls.check_preconditions()
 
     def setUp(self):
         super(TestNetworkBasicInterVMConnectivity, self).setUp()
@@ -62,7 +58,7 @@ class TestNetworkBasicInterVMConnectivity(manager.AdvancedNetworkScenarioTest):
         hops = [(ap_details['FIP'].floating_ip_address,
                  ap_details['keypair']['private_key'])]
         ip_pk = []
-        #the access_point server should be the last one in the list
+        # the access_point server should be the last one in the list
         for element in self.servers_and_keys[:-1]:
             # servers should only have 1 network
             server = element['server']

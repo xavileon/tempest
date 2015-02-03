@@ -37,11 +37,6 @@ class TestNetworkBasicDhcpDisable(manager.AdvancedNetworkScenarioTest):
             can't renew the dhcp
     """
 
-#    @classmethod
-#    def setUpClass(cls):
-#        super(TestNetworkBasicDhcpDisable, cls).setUpClass()
-#        cls.check_preconditions()
-
     def setUp(self):
         super(TestNetworkBasicDhcpDisable, self).setUp()
         self.servers_and_keys = self.setup_topology(
@@ -91,7 +86,7 @@ class TestNetworkBasicDhcpDisable(manager.AdvancedNetworkScenarioTest):
         networks = ap['addresses']
         hops = [(ap_details['FIP'].floating_ip_address,
                  ap_details['keypair']['private_key'])]
-        #the last element is ignored since it is the gateway
+        # the last element is ignored since it is the gateway
         for element in self.servers_and_keys[:-1]:
             server = element['server']
             # servers should only have 1 network
