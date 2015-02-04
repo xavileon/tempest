@@ -159,15 +159,16 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         # fix for cirros image in order to enable a second eth
         for net in xrange(1, len(server['addresses'].keys())):
             if access_point_ssh.exec_command(
-                    "cat /sys/class/net/eth{0}/operstate".format(net)) \
+                    "cat /sys/class/net/eth{0}/operstate".format(net), 300) \
                     is not 'up\n':
                 try:
                     result = access_point_ssh.exec_command(
                         "sudo /sbin/cirros-dhcpc up eth{0}".format(net),
-                        10)
+                        300)
                     LOG.info(result)
-                except exceptions.TimeoutException:
-                    pass
+                except exceptions.TimeoutException as inst:
+                    LOG.warning("Silent TimeoutException!")
+                    LOG.warning(inst)
 
     def build_gateway(self, tenant_id):
         return self._set_access_point(tenant_id)
