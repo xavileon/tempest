@@ -36,11 +36,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Base class for all Midokura network scenario tests
     """
 
-    @classmethod
-    def clear_isolated_creds(cls):
-        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
-        TA = admintools.TenantAdmin()
-        TA.teardown_tenants()
+#    @classmethod
+#    def clear_isolated_creds(cls):
+#        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
+#        TA = admintools.TenantAdmin()
+#        TA.teardown_tenants()
 
     """
     Creation Methods
@@ -148,7 +148,8 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         private_key = keypair['private_key']
         ip = access_point_ip.floating_ip_address
         self.servers_client.wait_for_server_status(server_id=server['id'],
-                                                   status='ACTIVE')
+                                                   status='ACTIVE',
+                                                   extra_timeout=169)
         access_point_ssh = \
             remote_client.RemoteClient(
                 server=ip,
@@ -159,12 +160,13 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         # fix for cirros image in order to enable a second eth
         for net in xrange(1, len(server['addresses'].keys())):
             if access_point_ssh.exec_command(
-                    "cat /sys/class/net/eth{0}/operstate".format(net), 300) \
+                    "cat /sys/class/net/eth{0}/operstate".format(net),
+                    cmd_timeout=300) \
                     is not 'up\n':
                 try:
                     result = access_point_ssh.exec_command(
                         "sudo /sbin/cirros-dhcpc up eth{0}".format(net),
-                        300)
+                        cmd_timeout=300)
                     LOG.info(result)
                 except exceptions.TimeoutException as inst:
                     LOG.warning("Silent TimeoutException!")
@@ -206,17 +208,22 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Get Methods
     """
     def _get_tenant(self, tenant):
-        TA = admintools.TenantAdmin()
-        _tenant = None
-        _creds = None
-        _tenant = TA.get_tenant_by_name(tenant['name'])
-        if _tenant is None:
-            _tenant, _creds = TA.tenant_create_enabled(
-                name=tenant['name'],
-                desc=tenant['description'])
-        else:
-            _creds = TA.admin_credentials(_tenant)
-        return _tenant, _creds
+        from tempest.common import credentials
+        _creds = credentials.get_isolated_credentials(tenant)
+        self.addCleanup(_creds.clear_isolated_creds)
+        #TA = admintools.TenantAdmin()
+        #_tenant = None
+        #_creds = None
+        #_tenant = TA.get_tenant_by_name(tenant['name'])
+        #if _tenant is None:
+        #    _tenant, _creds = TA.tenant_create_enabled(
+        #        name=tenant['name'],
+        #        desc=tenant['description'])
+        #else:
+        #    _creds = TA.admin_credentials(_tenant)
+        LOG.debug("CREDSMIDO")
+        LOG.debug(_creds.get_credentials('admin'))
+        return _creds.get_credentials('admin')
 
     def _get_tenant_security_groups(self, tenant=None):
         if not tenant:
@@ -397,14 +404,15 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             scenario = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
-                    _tenant, creds = self._get_tenant(tenant)
+                    creds = self._get_tenant(tenant['name'])
                     self.set_context(creds)
                     topo = [x for x in topology['scenarios']
                             if x['name'] == tenant['scenario']][0]
                     scenario.append(dict(credentials=creds,
                                          servers_and_keys=self._setup_topology(
                                              topo,
-                                             tenant_id=_tenant['id'])))
+                                             tenant_id=getattr(creds,
+                                                 'tenant_id'))))
             else:
                 scenario = self._setup_topology(topology)
         return scenario
