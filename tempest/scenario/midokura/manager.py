@@ -182,6 +182,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         every element in the tunnel host is a
         tuple: (IP,PrivateKey)
         """
+        # FIXME: just a try to increase all timeouts of ssh connections
+        CONF.compute.ssh_timeout = 300
+        CONF.compute.ssh_channel_timeout = 60
         GWS = []
         # last element is the final destination, which
         # is be passed tp the remote_client separately
