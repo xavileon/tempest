@@ -147,9 +147,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         access_point_ip, server = access_point
         private_key = keypair['private_key']
         ip = access_point_ip.floating_ip_address
-        self.servers_client.wait_for_server_status(server_id=server['id'],
-                                                   status='ACTIVE',
-                                                   extra_timeout=169)
+        #self.servers_client.wait_for_server_status(server_id=server['id'],
+        #                                           status='ACTIVE',
+        #                                           extra_timeout=169)
         access_point_ssh = \
             remote_client.RemoteClient(
                 server=ip,
