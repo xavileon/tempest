@@ -19,13 +19,13 @@ import os
 from tempest import clients
 from tempest import exceptions
 from neutronclient.common import exceptions as NeutronClientException
+from tempest.common import credentials
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
 from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
 from tempest.services.network import resources as net_resources
-from tempest.scenario.midokura.midotools import admintools
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
@@ -35,12 +35,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     Base class for all Midokura network scenario tests
     """
-
-#    @classmethod
-#    def clear_isolated_creds(cls):
-#        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
-#        TA = admintools.TenantAdmin()
-#        TA.teardown_tenants()
 
     """
     Creation Methods
@@ -147,9 +141,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         access_point_ip, server = access_point
         private_key = keypair['private_key']
         ip = access_point_ip.floating_ip_address
-        #self.servers_client.wait_for_server_status(server_id=server['id'],
-        #                                           status='ACTIVE',
-        #                                           extra_timeout=169)
+        # No need to wait for vm to be online, already waited when creating
         access_point_ssh = \
             remote_client.RemoteClient(
                 server=ip,
@@ -169,7 +161,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                         cmd_timeout=300)
                     LOG.info(result)
                 except exceptions.TimeoutException as inst:
-                    LOG.warning("Silent TimeoutException!")
                     LOG.warning(inst)
 
     def build_gateway(self, tenant_id):
@@ -182,9 +173,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         every element in the tunnel host is a
         tuple: (IP,PrivateKey)
         """
-        # FIXME: just a try to increase all timeouts of ssh connections
-        CONF.compute.ssh_timeout = 300
-        CONF.compute.ssh_channel_timeout = 60
         GWS = []
         # last element is the final destination, which
         # is be passed tp the remote_client separately
@@ -210,22 +198,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     Get Methods
     """
-    def _get_tenant(self, tenant):
-        from tempest.common import credentials
+    def _create_tenant(self, tenant):
         _creds = credentials.get_isolated_credentials(tenant)
         self.addCleanup(_creds.clear_isolated_creds)
-        #TA = admintools.TenantAdmin()
-        #_tenant = None
-        #_creds = None
-        #_tenant = TA.get_tenant_by_name(tenant['name'])
-        #if _tenant is None:
-        #    _tenant, _creds = TA.tenant_create_enabled(
-        #        name=tenant['name'],
-        #        desc=tenant['description'])
-        #else:
-        #    _creds = TA.admin_credentials(_tenant)
-        LOG.debug("CREDSMIDO")
-        LOG.debug(_creds.get_credentials('admin'))
         return _creds.get_credentials('admin')
 
     def _get_tenant_security_groups(self, tenant=None):
@@ -407,7 +382,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             scenario = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
-                    creds = self._get_tenant(tenant['name'])
+                    creds = self._create_tenant(tenant['name'])
                     self.set_context(creds)
                     topo = [x for x in topology['scenarios']
                             if x['name'] == tenant['scenario']][0]
@@ -415,7 +390,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                          servers_and_keys=self._setup_topology(
                                              topo,
                                              tenant_id=getattr(creds,
-                                                 'tenant_id'))))
+                                                               'tenant_id'))))
             else:
                 scenario = self._setup_topology(topology)
         return scenario
