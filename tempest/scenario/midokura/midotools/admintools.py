@@ -36,3 +36,8 @@ class TenantAdmin(object):
         role = [r for r in roles if r['name'] == name]
         if len(role) > 0:
             return role[0]
+
+    def assign_user_role(self, tenant_id, user_id, role_id):
+        self.client.assign_user_role(tenant_id,
+                                     user_id,
+                                     role_id)

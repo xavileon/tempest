@@ -218,9 +218,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         admin_user = TA.get_user_by_name('admin')
         admin_tenant_creds = _creds.get_credentials('admin')
         tenant_id = getattr(admin_tenant_creds, 'tenant_id')
-        self.client.assign_user_role(tenant_id,
-                                     admin_user['id'],
-                                     admin_role['id'])
+        TA.assign_user_role(tenant_id,
+                            admin_user['id'],
+                            admin_role['id'])
         return admin_tenant_creds
 
     def _get_tenant_security_groups(self, tenant=None):
