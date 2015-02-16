@@ -26,6 +26,7 @@ from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
 from tempest.services.network import resources as net_resources
+from tempest.scenario.midokura.midotools import admintools
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
@@ -35,6 +36,12 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     Base class for all Midokura network scenario tests
     """
+
+#    @classmethod
+#    def clear_isolated_creds(cls):
+#        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
+#        TA = admintools.TenantAdmin()
+#        TA.teardown_tenants()
 
     """
     Creation Methods
@@ -141,7 +148,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         access_point_ip, server = access_point
         private_key = keypair['private_key']
         ip = access_point_ip.floating_ip_address
-        # No need to wait for vm to be online, already waited when creating
         access_point_ssh = \
             remote_client.RemoteClient(
                 server=ip,
@@ -161,6 +167,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                         cmd_timeout=300)
                     LOG.info(result)
                 except exceptions.TimeoutException as inst:
+                    LOG.warning("Silent TimeoutException!")
                     LOG.warning(inst)
 
     def build_gateway(self, tenant_id):
@@ -173,6 +180,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         every element in the tunnel host is a
         tuple: (IP,PrivateKey)
         """
+        # FIXME: just a try to increase all timeouts of ssh connections
+        CONF.compute.ssh_timeout = 300
+        CONF.compute.ssh_channel_timeout = 60
         GWS = []
         # last element is the final destination, which
         # is be passed tp the remote_client separately
@@ -198,18 +208,14 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     Get Methods
     """
-    def _create_tenant(self, tenant):
+    def _get_tenant(self, tenant):
         _creds = credentials.get_isolated_credentials(tenant)
         self.addCleanup(_creds.clear_isolated_creds)
         # Assign admin user to tenant
         # Fix for icehouse (juno doesn't need this)
-        client = clients.AdminManager('json').identity_client
-        admin_user = client.get_user_by_username('admin', 'admin')
-        roles = client.list_roles()
-        admin_role = None
-        for role in roles:
-            if role['name'] == 'admin':
-                admin_role = role
+        TA = admintools.TenantAdmin()
+        admin_role = TA.get_role_by_name('admin')
+        admin_user = TA.get_user_by_name('admin')
         admin_tenant_creds = _creds.get_credentials('admin')
         tenant_id = getattr(admin_tenant_creds, 'tenant_id')
         self.client.assign_user_role(tenant_id,
@@ -396,7 +402,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             scenario = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
-                    creds = self._create_tenant(tenant['name'])
+                    creds = self._get_tenant(tenant['name'])
                     self.set_context(creds)
                     topo = [x for x in topology['scenarios']
                             if x['name'] == tenant['scenario']][0]
