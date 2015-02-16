@@ -201,6 +201,19 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     def _create_tenant(self, tenant):
         _creds = credentials.get_isolated_credentials(tenant)
         self.addCleanup(_creds.clear_isolated_creds)
+        # Assign admin user to tenant
+        # Fix for icehouse (juno doesn't need this)
+        tenant_id = getattr(_creds, 'tenant_id')
+        client = clients.AdminManager('json').identity_client
+        admin_user = client.get_user_by_username('admin', 'admin')
+        roles = client.list_roles()
+        admin_role = None
+        for role in roles:
+            if role['name'] == 'admin':
+                admin_role = role
+        self.client.assign_user_role(tenant_id,
+                                     admin_user['id'],
+                                     admin_role['id'])
         return _creds.get_credentials('admin')
 
     def _get_tenant_security_groups(self, tenant=None):
