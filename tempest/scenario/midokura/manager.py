@@ -37,12 +37,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Base class for all Midokura network scenario tests
     """
 
-#    @classmethod
-#    def clear_isolated_creds(cls):
-#        super(AdvancedNetworkScenarioTest, cls).clear_isolated_creds()
-#        TA = admintools.TenantAdmin()
-#        TA.teardown_tenants()
-
     """
     Creation Methods
     """
@@ -99,10 +93,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                     create_kwargs=create_kwargs)
         FIP = None
         if has_FIP:
-            network_names = self._get_network_by_name(networks[0]['name'])
+            # We need to pick up the tenant network from the isolated_creds
+            tenant_network = self.isolated_creds.get_admin_network()
             FIP = self._assign_floating_ip(
                 server=server,
-                network_name=network_names[0]['name'])
+                network_name=tenant_network['name'])
 
         return dict(server=server, keypair=keypair, FIP=FIP)
 
@@ -115,19 +110,13 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         in order to access tenant internal network
         workaround ip namespace
         """
-        network, _, _ = \
-            self.create_networks(tenant_id=tenant)
+        # No need to create extra network. Use the one created 
+        # by isolated credentials
         name = 'access_point'
         name = data_utils.rand_name(name)
 
         networks = self._get_tenant_networks(tenant)
-        if networks[0]['name'] != network['name']:
-            for i in xrange(len(networks)):
-                if networks[i]['name'] == \
-                        network['name'] and i != 0:
-                            net = networks[i]
-                            networks[i] = networks[0]
-                            networks[0] = net
+
         self._create_security_group(tenant_id=tenant,
                                     namestart='gateway')
         security_groups = self._get_tenant_security_groups(tenant)
@@ -180,9 +169,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         every element in the tunnel host is a
         tuple: (IP,PrivateKey)
         """
-        # FIXME: just a try to increase all timeouts of ssh connections
-        CONF.compute.ssh_timeout = 300
-        CONF.compute.ssh_channel_timeout = 60
         GWS = []
         # last element is the final destination, which
         # is be passed tp the remote_client separately
@@ -209,19 +195,19 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Get Methods
     """
     def _get_tenant(self, tenant):
-        _creds = credentials.get_isolated_credentials(tenant)
-        self.addCleanup(_creds.clear_isolated_creds)
+        iso_creds = credentials.get_isolated_credentials(tenant)
+        self.addCleanup(iso_creds.clear_isolated_creds)
         # Assign admin user to tenant
         # Fix for icehouse (juno doesn't need this)
         TA = admintools.TenantAdmin()
         admin_role = TA.get_role_by_name('admin')
         admin_user = TA.get_user_by_name('admin')
-        admin_tenant_creds = _creds.get_credentials('admin')
-        tenant_id = getattr(admin_tenant_creds, 'tenant_id')
+        tenant_admin_creds = iso_creds.get_credentials('admin')
+        tenant_id = getattr(tenant_admin_creds, 'tenant_id')
         TA.assign_user_role(tenant_id,
                             admin_user['id'],
                             admin_role['id'])
-        return admin_tenant_creds
+        return tenant_admin_creds, iso_creds
 
     def _get_tenant_security_groups(self, tenant=None):
         if not tenant:
@@ -318,7 +304,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     YAML parsing methods
     """
-    def _setup_topology(self, topology, tenant_id=None):
+    def _setup_topology(self, topology, tenant_id=None, tenant_name=None):
         if tenant_id:
             self.tenant_id = tenant_id
         networks = [n for n in topology['networks']]
@@ -402,15 +388,17 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             scenario = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
-                    creds = self._get_tenant(tenant['name'])
-                    self.set_context(creds)
+                    tenant_creds, isolated_creds = self._get_tenant(tenant['name'])
+                    self.set_context(tenant_creds)
+                    self.isolated_creds = isolated_creds
                     topo = [x for x in topology['scenarios']
                             if x['name'] == tenant['scenario']][0]
-                    scenario.append(dict(credentials=creds,
+                    scenario.append(dict(credentials=tenant_creds,
                                          servers_and_keys=self._setup_topology(
                                              topo,
-                                             tenant_id=getattr(creds,
+                                             tenant_id=getattr(tenant_creds,
                                                                'tenant_id'))))
             else:
+                self.isolated_creds = AdvancedNetworkScenarioTest.isolated_creds
                 scenario = self._setup_topology(topology)
         return scenario
