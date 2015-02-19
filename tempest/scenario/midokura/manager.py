@@ -37,6 +37,12 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Base class for all Midokura network scenario tests
     """
 
+    @classmethod
+    def resource_setup(cls):
+        # Create no network resources for these tests.
+        cls.set_network_resources()
+        super(AdvancedNetworkScenarioTest, cls).resource_setup()
+
     """
     Creation Methods
     """
@@ -93,11 +99,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                     create_kwargs=create_kwargs)
         FIP = None
         if has_FIP:
-            # We need to pick up the tenant network from the isolated_creds
-            tenant_network = self.isolated_creds.get_admin_network()
             FIP = self._assign_floating_ip(
                 server=server,
-                network_name=tenant_network['name'])
+                network_name=networks[0]['name'])
 
         return dict(server=server, keypair=keypair, FIP=FIP)
 
@@ -110,12 +114,14 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         in order to access tenant internal network
         workaround ip namespace
         """
-        # No need to create extra network. Use the one created 
-        # by isolated credentials
+        networks = self._get_tenant_networks(tenant)
+        network, _, _ = self.create_networks(tenant_id=tenant)
+        # cirros only ifup the first interface, thus we need to put
+        # the "gateway" network at the front (so it's the first to ifup)
+        networks.insert(0, network)
+        
         name = 'access_point'
         name = data_utils.rand_name(name)
-
-        networks = self._get_tenant_networks(tenant)
 
         self._create_security_group(tenant_id=tenant,
                                     namestart='gateway')
@@ -124,6 +130,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                         networks=networks,
                                         security_groups=security_groups,
                                         has_FIP=True)
+                                        
 
         tupla = (serv_dict['FIP'], serv_dict['server'])
         self._fix_access_point(tupla,
@@ -199,14 +206,14 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         self.addCleanup(iso_creds.clear_isolated_creds)
         # Assign admin user to tenant
         # Fix for icehouse (juno doesn't need this)
-        TA = admintools.TenantAdmin()
-        admin_role = TA.get_role_by_name('admin')
-        admin_user = TA.get_user_by_name('admin')
+        #TA = admintools.TenantAdmin()
+        #admin_role = TA.get_role_by_name('admin')
+        #admin_user = TA.get_user_by_name('admin')
         tenant_admin_creds = iso_creds.get_credentials('admin')
-        tenant_id = getattr(tenant_admin_creds, 'tenant_id')
-        TA.assign_user_role(tenant_id,
-                            admin_user['id'],
-                            admin_role['id'])
+        #tenant_id = getattr(tenant_admin_creds, 'tenant_id')
+        #TA.assign_user_role(tenant_id,
+        #                    admin_user['id'],
+        #                    admin_role['id'])
         return tenant_admin_creds, iso_creds
 
     def _get_tenant_security_groups(self, tenant=None):
@@ -258,14 +265,17 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     Tool methods
     """
     def set_context(self, credentials):
+        # TODO: we may need to get other clients to avoid auth problems
+        # Most of resource operations are done with the primary creds
         self.mymanager = clients.Manager(credentials=credentials)
         self.floating_ips_client = self.mymanager.floating_ips_client
         self.keypairs_client = self.mymanager.keypairs_client
-        self.networks_client = self.mymanager.networks_client
         self.security_groups_client = self.mymanager.security_groups_client
         self.servers_client = self.mymanager.servers_client
         self.interface_client = self.mymanager.interfaces_client
         self.network_client = self.mymanager.network_client
+        # networks_client need admin credentials to remove networks 
+        self.networks_client = self.mymanager.networks_client
 
     def _toggle_dhcp(self, subnet_id, enable=False):
         result = self.network_client.update_subnet(subnet_id,
@@ -399,6 +409,5 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                              tenant_id=getattr(tenant_creds,
                                                                'tenant_id'))))
             else:
-                self.isolated_creds = AdvancedNetworkScenarioTest.isolated_creds
                 scenario = self._setup_topology(topology)
         return scenario
