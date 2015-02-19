@@ -135,10 +135,6 @@ def fix_tempest_conf(network_client):
         if not config.get('compute', 'allow_tenant_isolation'):
             config.set('compute', 'allow_tenant_isolation', 'True')
 
-    # increase ssh timeouts to minimize false gateway failures
-    config.set('compute', 'ssh_timeout', '300')
-    config.set('compute', 'ssh_channel_timeout', '60')
-
     with open(_path, 'w') as tempest_conf:
         config.write(tempest_conf)
 
