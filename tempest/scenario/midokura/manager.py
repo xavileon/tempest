@@ -79,7 +79,8 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
 
     def _create_server(self, name, networks,
                        security_groups=None,
-                       has_FIP=False):
+                       has_FIP=False,
+                       wait_on_boot=False):
         keypair = self.create_keypair()
         if security_groups is None:
             raise Exception("No security group")
@@ -95,7 +96,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             'tenant_id': self.tenant_id,
         }
         server = self.create_server(name=name,
+                                    wait_on_boot=wait_on_boot,
                                     create_kwargs=create_kwargs)
+        if not wait_on_boot:
+            # Add to a list to later ask for network details after ACTIVE
+            self.wait_on_server_boot.append(server)
         FIP = None
         if has_FIP:
             # FIXME: when cirros is gone
@@ -129,10 +134,12 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         self._create_security_group(tenant_id=tenant,
                                     namestart='gateway')
         security_groups = self._get_tenant_security_groups(tenant)
+        # FIXME: we need to wait for cirros to ifup its ifaces (only gateway)
         serv_dict = self._create_server(name=name,
                                         networks=networks,
                                         security_groups=security_groups,
-                                        has_FIP=True)
+                                        has_FIP=True,
+                                        wait_on_boot=True)
 
         tupla = (serv_dict['FIP'], serv_dict['server'])
         # FIXME: look as soon as we change cirros image
@@ -389,6 +396,7 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         with open(fullpath, 'r') as yaml_topology:
             topology = yaml.load(yaml_topology)
             scenario = list()
+            self.wait_on_server_boot = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
                     tenant_creds = self._get_tenant(tenant['name'])
@@ -402,4 +410,13 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                                                'tenant_id'))))
             else:
                 scenario = self._setup_topology(topology)
+            self.update_server_info(self.wait_on_server_boot)
         return scenario
+
+    def update_server_info(self, wait_on_server_boot):
+        for server in wait_on_server_boot:
+            self.servers_client.wait_for_server_status(server_id=server['id'],
+                                                       status='ACTIVE')
+            # To update on latest merge
+            _, server_updated = self.servers_client.get_server(server['id'])
+            server.update(server_updated)
