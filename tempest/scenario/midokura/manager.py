@@ -26,7 +26,6 @@ from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
 from tempest.services.network import resources as net_resources
-from tempest.scenario.midokura.midotools import admintools
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
@@ -99,6 +98,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                     create_kwargs=create_kwargs)
         FIP = None
         if has_FIP:
+            # FIXME: when cirros is gone
+            # We bind the fip to the first network, which is the first
+            # nic on cirros image (the one attached to the "gateway network")
             FIP = self._assign_floating_ip(
                 server=server,
                 network_name=networks[0]['name'])
@@ -116,10 +118,11 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         """
         networks = self._get_tenant_networks(tenant)
         network, _, _ = self.create_networks(tenant_id=tenant)
+        # FIXME: look as soon as we change cirros image
         # cirros only ifup the first interface, thus we need to put
         # the "gateway" network at the front (so it's the first to ifup)
         networks.insert(0, network)
-        
+
         name = 'access_point'
         name = data_utils.rand_name(name)
 
@@ -130,9 +133,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
                                         networks=networks,
                                         security_groups=security_groups,
                                         has_FIP=True)
-                                        
 
         tupla = (serv_dict['FIP'], serv_dict['server'])
+        # FIXME: look as soon as we change cirros image
         self._fix_access_point(tupla,
                                serv_dict['keypair'])
         return serv_dict
@@ -204,17 +207,9 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     def _get_tenant(self, tenant):
         iso_creds = credentials.get_isolated_credentials(tenant)
         self.addCleanup(iso_creds.clear_isolated_creds)
-        # Assign admin user to tenant
-        # Fix for icehouse (juno doesn't need this)
-        #TA = admintools.TenantAdmin()
-        #admin_role = TA.get_role_by_name('admin')
-        #admin_user = TA.get_user_by_name('admin')
+        # Get admin credentials to be able to create resources
         tenant_admin_creds = iso_creds.get_credentials('admin')
-        #tenant_id = getattr(tenant_admin_creds, 'tenant_id')
-        #TA.assign_user_role(tenant_id,
-        #                    admin_user['id'],
-        #                    admin_role['id'])
-        return tenant_admin_creds, iso_creds
+        return tenant_admin_creds
 
     def _get_tenant_security_groups(self, tenant=None):
         if not tenant:
@@ -266,7 +261,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
     """
     def set_context(self, credentials):
         # TODO: we may need to get other clients to avoid auth problems
-        # Most of resource operations are done with the primary creds
         self.mymanager = clients.Manager(credentials=credentials)
         self.floating_ips_client = self.mymanager.floating_ips_client
         self.keypairs_client = self.mymanager.keypairs_client
@@ -274,7 +268,6 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         self.servers_client = self.mymanager.servers_client
         self.interface_client = self.mymanager.interfaces_client
         self.network_client = self.mymanager.network_client
-        # networks_client need admin credentials to remove networks 
         self.networks_client = self.mymanager.networks_client
 
     def _toggle_dhcp(self, subnet_id, enable=False):
@@ -398,9 +391,8 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
             scenario = list()
             if 'tenants' in topology.keys():
                 for tenant in topology['tenants']:
-                    tenant_creds, isolated_creds = self._get_tenant(tenant['name'])
+                    tenant_creds = self._get_tenant(tenant['name'])
                     self.set_context(tenant_creds)
-                    self.isolated_creds = isolated_creds
                     topo = [x for x in topology['scenarios']
                             if x['name'] == tenant['scenario']][0]
                     scenario.append(dict(credentials=tenant_creds,
