@@ -304,6 +304,39 @@ class AdvancedNetworkScenarioTest(manager.NetworkScenarioTest):
         for root, dirs, _ in os.walk(realpath):
             if path in dirs:
                 return os.path.join(root, path)
+
+    def _create_subnet(self, network, client=None, namestart='subnet-smoke',
+                       **kwargs):
+        """
+        Create a subnet for the given network.
+        If a cidr is specified in kwargs, create the subnet directly
+        If not, call the super method which will find an unallocated range
+        FIXME: delete this method once the patch is accepted upstream
+        """
+
+        # A cidr was not specified, just find a new one
+        if 'cidr' not in kwargs:
+            return super(AdvancedNetworkScenarioTest, self)._create_subnet(
+                network,
+                client=client,
+                namestart=namestart,
+                **kwargs)
+
+        if not client:
+            client = self.network_client
+
+        subnet = dict(
+            name=data_utils.rand_name(namestart),
+            network_id=network.id,
+            tenant_id=network.tenant_id)
+        subnet.update(**kwargs)
+        result = client.create_subnet(**subnet)
+        subnet = net_resources.DeletableSubnet(client=client,
+                                               **result['subnet'])
+        self.assertEqual(subnet.cidr, kwargs['cidr'])
+        self.addCleanup(self.delete_wrapper, subnet.delete)
+        return subnet
+
     """
     YAML parsing methods
     """
