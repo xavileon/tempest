@@ -12,55 +12,58 @@
 
 import os
 
+from tempest import config
 from tempest.openstack.common import log as logging
-from tempest.scenario.midokura import manager
 from tempest import test
 
+from midokura.scenario import manager
 
 LOG = logging.getLogger(__name__)
+CONF = config.CONF
 SCPATH = "/network_scenarios/"
 
 
-class TestNetworkAdvancedSecurityGroups2Networks(
-        manager.AdvancedNetworkScenarioTest):
+class TestNetworkAdvancedSecurityGroups(manager.AdvancedNetworkScenarioTest):
     """
+        Scenario:
+            check default SG behavior for TCP
         Prerequisite:
             - two VMs A and B
             - in same tenant
-            - in different subnets SnetA, SnetB
+            - in same subnet
             - In the same and only SG Sg
             - Sg has no ingress or egress rules
-            - VMs with net cat
-    test1:
+    Test1:
         Steps:
-            1- send pint A to B
-        Expecte results:
-            Ping does NOT work
-    test2:
-        steps:
-            1- add custom icmp rule in SG S,
-                for ICMP type 8, code -1, for egress
-            2- add custom icmp rule in SG S,
-                for ICMP type 8, code -1, for ingress
-            3- send ping A to B
-
-        Expected results:
-            ping does work
+            1- send ping A to B (on private IPs)
+        Expected result:
+            - check ping does NOT work
+    Test 2:
+        Steps:
+            - add custom icmp rule in SG S,
+            for ICMP type 8, code -1, for egress
+            - add custom icmp rule in SG S,
+            for ICMP type 8, code -1, for ingress
+            - send ping A to B
+        Expected result:
+            -ping does work
     """
 
     def setUp(self):
-        super(TestNetworkAdvancedSecurityGroups2Networks, self).setUp()
+        super(TestNetworkAdvancedSecurityGroups, self).setUp()
         self.servers_and_keys = self.setup_topology(
-            os.path.abspath('{0}scenario_basic_2nets.yaml'.format(SCPATH)))
+            os.path.abspath(
+                '{0}scenario_advanced_security_groups.yaml'.format(SCPATH)))
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
-    def test_network_basic_security_group_2nets(self):
+    def test_network_advanced_security_group(self):
         rulesets = [{
                     'direction': 'egress',
                     'protocol': 'icmp',
                     'port_range_min': 8,
-                    'port_range_max': None, },
+                    'port_range_max': None,
+                    },
                     {
                     'direction': 'ingress',
                     'protocol': 'icmp',
@@ -73,7 +76,7 @@ class TestNetworkAdvancedSecurityGroups2Networks(
 
         ap_details = self.servers_and_keys[-1]
         hops = [(ap_details['FIP'].floating_ip_address,
-                ap_details['keypair']['private_key'])]
+                 ap_details['keypair']['private_key'])]
         vm1_server = self.servers_and_keys[0]['server']
         vm2_server = self.servers_and_keys[1]['server']
         vm1_pk = self.servers_and_keys[0]['keypair']['private_key']
@@ -85,7 +88,7 @@ class TestNetworkAdvancedSecurityGroups2Networks(
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
-    def test_network_basic_security_group_2nets_negative(self):
+    def test_network_advanced_security_group_negative(self):
         ap_details = self.servers_and_keys[-1]
         hops = [(ap_details['FIP'].floating_ip_address,
                  ap_details['keypair']['private_key'])]

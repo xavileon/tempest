@@ -21,11 +21,12 @@ from tempest import exceptions
 from neutronclient.common import exceptions as NeutronClientException
 from tempest.common import credentials
 from tempest.common.utils import data_utils
-from tempest.common.utils.linux import remote_client
 from tempest import config
 from tempest.openstack.common import log
 from tempest.scenario import manager
 from tempest.services.network import resources as net_resources
+
+from midokura.midotools import remote_client
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)

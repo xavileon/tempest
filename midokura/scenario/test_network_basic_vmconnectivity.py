@@ -15,10 +15,10 @@ import re
 import os
 
 from tempest.openstack.common import log as logging
-from tempest.scenario.midokura.midotools import helper
-from tempest.scenario.midokura import manager
 from tempest import test
 
+from midokura.midotools import helper
+from midokura.scenario import manager
 
 LOG = logging.getLogger(__name__)
 # path should be described in tempest.conf

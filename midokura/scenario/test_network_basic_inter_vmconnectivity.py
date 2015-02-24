@@ -15,8 +15,9 @@ import itertools
 import os
 
 from tempest.openstack.common import log as logging
-from tempest.scenario.midokura import manager
 from tempest import test
+
+from midokura.scenario import manager
 
 LOG = logging.getLogger(__name__)
 SCPATH = "/network_scenarios/"

@@ -13,9 +13,9 @@
 import os
 
 from tempest.openstack.common import log as logging
-from tempest.scenario.midokura import manager
 from tempest import test
 
+from midokura.scenario import manager
 
 LOG = logging.getLogger(__name__)
 SCPATH = "/network_scenarios/"
@@ -39,9 +39,9 @@ class TestNetworkAdvancedSecurityGroups2Networks(
     test2:
         steps:
             1- add custom icmp rule in SG S,
-                 for ICMP type 8, code -1, for egress
+                for ICMP type 8, code -1, for egress
             2- add custom icmp rule in SG S,
-                 for ICMP type 8, code -1, for ingress
+                for ICMP type 8, code -1, for ingress
             3- send ping A to B
 
         Expected results:
@@ -51,11 +51,11 @@ class TestNetworkAdvancedSecurityGroups2Networks(
     def setUp(self):
         super(TestNetworkAdvancedSecurityGroups2Networks, self).setUp()
         self.servers_and_keys = self.setup_topology(
-            os.path.abspath('{0}scenario_advanced_2nets.yaml'.format(SCPATH)))
+            os.path.abspath('{0}scenario_basic_2nets.yaml'.format(SCPATH)))
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
-    def test_network_advanced_security_group(self):
+    def test_network_basic_security_group_2nets(self):
         rulesets = [{
                     'direction': 'egress',
                     'protocol': 'icmp',
@@ -85,7 +85,7 @@ class TestNetworkAdvancedSecurityGroups2Networks(
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
-    def test_network_advanced_security_group_negative(self):
+    def test_network_basic_security_group_2nets_negative(self):
         ap_details = self.servers_and_keys[-1]
         hops = [(ap_details['FIP'].floating_ip_address,
                  ap_details['keypair']['private_key'])]

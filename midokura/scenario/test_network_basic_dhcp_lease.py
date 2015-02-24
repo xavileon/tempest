@@ -14,10 +14,10 @@
 import os
 
 from tempest.openstack.common import log as logging
-from tempest.scenario.midokura.midotools import helper
-from tempest.scenario.midokura import manager
 from tempest import test
 
+from midokura.scenario import manager
+from midokura.midotools import helper
 
 LOG = logging.getLogger(__name__)
 CIDR1 = "10.10.10.0/24"
