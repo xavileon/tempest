@@ -18,7 +18,7 @@ try:
 except DistributionNotFound:
     pip.main(['install', 'SimpleConfigParser'])
 
-# Workarround to get tempest module 
+# Workarround to get tempest module
 # (instead of following mido-setup.py symlink)
 sys.path.append(os.getcwd())
 
@@ -53,14 +53,14 @@ def set_context(credentials):
         glclient.Client(glance_endpoint,
                         token=keystone.auth_token)
     try:
-    	nova_client = nvclient.Client(2,
-				      kscreds['username'],
+        nova_client = nvclient.Client(2,
+                                      kscreds['username'],
                                       kscreds['password'],  # api_key in method
                                       kscreds['tenant_name'],
                                       kscreds['auth_url'])
     except:
-	nova_client = nvclient.Client(3,
-				      kscreds['username'],
+        nova_client = nvclient.Client(3,
+                                      kscreds['username'],
                                       kscreds['password'],  # api_key in method
                                       kscreds['tenant_name'],
                                       kscreds['auth_url'])
@@ -157,6 +157,10 @@ def fix_tempest_conf(network_client, nova_client):
     config.set('compute', 'flavor_ref', smallest_flavor.id)
 
     # set up allow_tenant_isolation
+    if not config.has_section('auth'):
+        config.add_section('auth')
+    config.set('auth', 'allow_tenant_isolation', 'True')
+
     try:
         if not config.get('auth', 'allow_tenant_isolation'):
             config.set('auth', 'allow_tenant_isolation', 'True')
