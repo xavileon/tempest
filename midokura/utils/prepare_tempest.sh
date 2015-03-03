@@ -7,14 +7,16 @@
 # - Override the run_tempest.sh with our tunned script
 # - Link to various utilities present in $MIDO_DIR/utilities except self
 
+MIDO_UTILS=midokura/utils
+
 if [ $# -ne 1 ]; then
-    echo "Usage: midokura/utilities/prepare_tempest.sh [-d | tempest_revision]"
+    echo "Usage: $MIDO_UTILS/prepare_tempest.sh [-d | tempest_revision]"
     echo "if -d is passed, it will only clean the environment"
     exit 1
 fi
 
 # Check if we're working on the correct base dir
-ls -lda midokura/utilities/prepare_tempest.sh > /dev/null 2>&1
+ls -lda $MIDO_UTILS/prepare_tempest.sh > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "ERROR: you should execute this script from the top of the working tree"
     exit 1
@@ -43,11 +45,11 @@ rm -rf .tempest.tmp
 echo $1 > .tempest_revision
 
 # Link to various utilities of our own
-ln -sf midokura/utilities/run_tempest.sh run_tempest.sh
-ln -sf midokura/utilities/run_mido.sh run_mido.sh
-ln -sf midokura/utilities/run_clean_failed_tests.sh
-ln -sf midokura/utilities/mido-setup.py mido-setup.py
-ln -sf midokura/utilities/.gitignore .gitignore
+ln -sf $MIDO_UTILS/run_tempest.sh run_tempest.sh
+ln -sf $MIDO_UTILS/run_mido.sh run_mido.sh
+ln -sf $MIDO_UTILS/run_clean_failed_tests.sh
+ln -sf $MIDO_UTILS/mido-setup.py mido-setup.py
+ln -sf $MIDO_UTILS/.gitignore .gitignore
 
 echo "Done!"
 echo "Remember to:"
