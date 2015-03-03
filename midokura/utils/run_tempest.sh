@@ -104,6 +104,10 @@ function run_tests {
   # Define the test_discover path to allow testr to discover tempest tests
   # as well as our tests, now outside of the tempest directory
   export OS_TEST_PATH=./midokura/test_discover
+  # Increase the timeout to something higher, this is kind of arbitrary as
+  # some times 500s is enough but not always... based on the a plain juno
+  # without midonet.
+  export OS_TEST_TIMEOUT=600
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover ./tempest/test_discover"
