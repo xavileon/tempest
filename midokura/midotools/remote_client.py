@@ -48,3 +48,6 @@ class RemoteClient(remote_client.RemoteClient):
                                      ssh_timeout, pkey=pkey,
                                      channel_timeout=ssh_channel_timeout,
                                      gws=gws)
+
+    def exec_command(self, cmd, cmd_timeout=0):
+        return self.ssh_client.exec_command(cmd, cmd_timeout)
