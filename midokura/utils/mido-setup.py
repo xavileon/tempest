@@ -2,24 +2,9 @@
 # Ensure that allow overlapping tenants is set to false?
 # tempest.conf is configured properly, and tenants are clean
 
-import glanceclient.v2.client as glclient
-import keystoneclient.v2_0.client as ksclient
-#import novaclient.v2.client as nvclient
-import novaclient.client as nvclient
 import os
-import pip
 import sys
 
-from pkg_resources import WorkingSet, DistributionNotFound
-
-try:
-    working_set = WorkingSet()
-    dep = working_set.require('SimpleConfigParser')
-except DistributionNotFound:
-    pip.main(['install', 'SimpleConfigParser'])
-
-# Workarround to get tempest module
-# (instead of following mido-setup.py symlink)
 sys.path.append(os.getcwd())
 
 from simpleconfigparser import simpleconfigparser
@@ -34,65 +19,25 @@ tenant = None
 
 def main():
     credentials = cred_provider.get_configured_credentials('identity_admin')
-    network_client, image_client, glance_client, nova_client = set_context(credentials)
-    # Start to config
-    fix_cirros(glance_client, image_client)
-    fix_tempest_conf(network_client, nova_client)
-
-
-def set_context(credentials):
-    kscreds = _get_keystone_credentials(credentials)
-    keystone = ksclient.Client(**kscreds)
     manager = clients.Manager(credentials=credentials)
-    network_client = manager.network_client
-    image_client = manager.image_client
-    glance_endpoint = keystone.service_catalog.url_for(
-        service_type='image',
-        endpoint_type='internal')
-    glance_client =\
-        glclient.Client(glance_endpoint,
-                        token=keystone.auth_token)
-    try:
-        nova_client = nvclient.Client(2,
-                                      kscreds['username'],
-                                      kscreds['password'],  # api_key in method
-                                      kscreds['tenant_name'],
-                                      kscreds['auth_url'])
-    except:
-        nova_client = nvclient.Client(3,
-                                      kscreds['username'],
-                                      kscreds['password'],  # api_key in method
-                                      kscreds['tenant_name'],
-                                      kscreds['auth_url'])
-
-    return network_client, image_client, glance_client, nova_client
+    check_image_ref(manager)
+    fix_tempest_conf(manager)
 
 
-def _get_keystone_credentials(credentials):
-    d = {}
-    d['username'] = credentials.username
-    d['password'] = credentials.password
-    d['auth_url'] = CONF.identity.uri
-    d['tenant_name'] = credentials.tenant_name
-    d['endpoint_type'] = 'public'
-    return d
-
-
-def fix_cirros(glance_client, image_client):
+def check_image_ref(manager):
     global image_ref
-    images = glance_client.images.list()
-    flag = 1
-    for img in images:
-        if img['checksum'] == '133eae9fb1c98f45894a4e60d8736619' and img[
-                'visibility'] == 'public':
-            image_ref = img['id']
-            flag = 0
-            break
-    if flag > 0:
-        upload_cirros(image_client)
+    images = manager.image_client.image_list()
+    image_checksum = '133eae9fb1c98f45894a4e60d8736619'
+    matched_image = next((img for img in images
+                          if img['checksum'] == image_checksum),
+                         None)
+    if matched_image:
+        image_ref = matched_image['id']
+    else:
+        upload_image_ref(manager)
 
 
-def upload_cirros(image_client):
+def upload_image_ref(manager):
     # create and image with cirros 0.3.3
     global image_ref
     kwargs = {
@@ -101,17 +46,17 @@ def upload_cirros(image_client):
         'is_public': True,
     }
     try:
-        resp = image_client.create_image(name='cirros 0.3.3',
-                                         container_format='bare',
-                                         disk_format='raw',
-                                         **kwargs)
+        resp = manager.image_client.create_image(name='cirros 0.3.3',
+                                                 container_format='bare',
+                                                 disk_format='raw',
+                                                 **kwargs)
     except:
         raise Exception("Cirros image not created")
 
     image_ref = resp['id']
 
 
-def fix_tempest_conf(network_client, nova_client):
+def fix_tempest_conf(manager):
     DEFAULT_CONFIG_DIR = os.path.join(
         os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
         "etc")
@@ -136,6 +81,8 @@ def fix_tempest_conf(network_client, nova_client):
         print(str(e))
 
     # get config params from deployment and set into midoconfig
+    # TODO: add identity: admin_username, username
+    # TODO: no need for public_net_id, query it ourselves
     sections = {'identity': ['admin_password', 'password', 'uri', 'uri_v3'],
                 'dashboard': ['login_url', 'dashboard_url'],
                 'network': ['public_network_id']}
@@ -146,7 +93,7 @@ def fix_tempest_conf(network_client, nova_client):
             midoconfig.set(section, key, value)
 
     # get neutron suported extensions
-    extensions_dict = network_client.list_extensions()
+    extensions_dict = manager.network_client.list_extensions()
     extensions_unfiltered = [x['alias'] for x in extensions_dict['extensions']]
     # setup network extensions
     extensions = [x for x in extensions_unfiltered
@@ -165,14 +112,14 @@ def fix_tempest_conf(network_client, nova_client):
     # set up image_ref
     if image_ref:
         midoconfig.set('compute', 'image_ref', image_ref)
-
+        midoconfig.set('compute', 'image_ref_alt', image_ref)
     # set up flavor_ref
-    nova_flavors = nova_client.flavors.list()
-    nova_flavors.sort(key=lambda x: x.ram)
-    smallest_flavor = nova_flavors[0]
-    if smallest_flavor.ram > 64:
+    flavors = manager.flavors_client.list_flavors_with_detail()
+    flavors.sort(key=lambda x: x['ram'])
+    smallest_flavor = flavors[0]
+    if smallest_flavor['ram'] > 64:
         print "WARNING: smallest flavor available is greater than 64 mb"
-    midoconfig.set('compute', 'flavor_ref', smallest_flavor.id)
+    midoconfig.set('compute', 'flavor_ref', smallest_flavor['id'])
 
     with open(_path, 'w') as tempest_conf:
         midoconfig.write(tempest_conf)

@@ -1,1 +1,1 @@
-python-novaclient>=2.18.0
+SimpleConfigParser
