@@ -118,14 +118,32 @@ def fix_tempest_conf(network_client, nova_client):
 
     DEFAULT_CONFIG_FILE = "/tempest.conf"
     _path = DEFAULT_CONFIG_DIR + DEFAULT_CONFIG_FILE
+
+    _mido_path = "midokura/utils/tempest.conf.midokura"
+
     if not os.path.isfile(_path):
         raise Exception("No config file in %s", _path)
 
+    if not os.path.isfile(_mido_path):
+        raise Exception("No config file in %s", _mido_path)
+
     try:
         config = simpleconfigparser()
+        midoconfig = simpleconfigparser()
         config.read(_path)
+        midoconfig.read(_mido_path)
     except Exception as e:
         print(str(e))
+
+    # get config params from deployment and set into midoconfig
+    sections = {'identity': ['admin_password', 'password', 'uri', 'uri_v3'],
+                'dashboard': ['login_url', 'dashboard_url'],
+                'network': ['public_network_id']}
+
+    for section, keys in sections.items():
+        for key in keys:
+            value = config.get(section, key)
+            midoconfig.set(section, key, value)
 
     # get neutron suported extensions
     extensions_dict = network_client.list_extensions()
@@ -141,12 +159,12 @@ def fix_tempest_conf(network_client, nova_client):
 
     if CONF.network_feature_enabled.api_extensions != to_string:
         # modify tempest.conf file
-        config.set('network-feature-enabled',
-                   'api_extensions', to_string)
+        midoconfig.set('network-feature-enabled',
+                       'api_extensions', to_string)
 
     # set up image_ref
     if image_ref:
-        config.set('compute', 'image_ref', image_ref)
+        midoconfig.set('compute', 'image_ref', image_ref)
 
     # set up flavor_ref
     nova_flavors = nova_client.flavors.list()
@@ -154,22 +172,10 @@ def fix_tempest_conf(network_client, nova_client):
     smallest_flavor = nova_flavors[0]
     if smallest_flavor.ram > 64:
         print "WARNING: smallest flavor available is greater than 64 mb"
-    config.set('compute', 'flavor_ref', smallest_flavor.id)
-
-    # set up allow_tenant_isolation
-    if not config.has_section('auth'):
-        config.add_section('auth')
-    config.set('auth', 'allow_tenant_isolation', 'True')
-
-    try:
-        if not config.get('auth', 'allow_tenant_isolation'):
-            config.set('auth', 'allow_tenant_isolation', 'True')
-    except:
-        if not config.get('compute', 'allow_tenant_isolation'):
-            config.set('compute', 'allow_tenant_isolation', 'True')
+    midoconfig.set('compute', 'flavor_ref', smallest_flavor.id)
 
     with open(_path, 'w') as tempest_conf:
-        config.write(tempest_conf)
+        midoconfig.write(tempest_conf)
 
 if __name__ == "__main__":
     main()

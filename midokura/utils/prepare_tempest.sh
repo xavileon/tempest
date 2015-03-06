@@ -4,8 +4,10 @@
 # Pre-requisities:
 # - execute this script from the base directory of tempest
 # Steps:
+# - Check out the specified revision
 # - Override the run_tempest.sh with our tunned script
 # - Link to various utilities present in $MIDO_DIR/utilities except self
+# - Prepare virtual env to execute tempest
 
 
 function usage {
@@ -13,7 +15,7 @@ function usage {
     echo "  -t  Tagged commit in tempest_tags file"
     echo "      if no tag exists, then it will take the argument as a commit revision (default: master)"
     echo "  -c  tempest.conf file with deployment info to modify to our midonet environment (default: etc/tempest.conf)"
-    echo "  -d  Only clean the environment, ignores -t and -c options"
+    echo "  -d  Cleans completely the environment"
     echo "  -h  Help"
     exit 1
 }
@@ -23,12 +25,13 @@ MIDO_UTILS=midokura/utils
 TAG_REV=master
 CONFIG_FILE=etc/tempest.conf
 
+# TODO: check for dependencies
+
 if [ $# -eq 0 ]; then
-   echo "WARNING: using defaults..."
+   echo "INFO: using defaults..."
    echo "-t master -c etc/tempest.conf"
    echo
 fi
-
 
 while getopts t:c:dh FLAG; do
     case $FLAG in
@@ -55,12 +58,38 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Clean current workspace
+# Check if there was a previous tempest environment prepared, and asks for removal
 shopt -s extglob
-rm -rf !(.git|.venv|.testrepository|midokura) > /dev/null 2>&1
+function clean {
+    echo "WARNING: deleting workspace... any file inside $PWD will be removed"
+    echo "         except directories .git .venv .testrepository midokura and $CONFIG_FILE"
+    while true; do
+        read -p "Are you sure? [y/n] " yn
+        case $yn in
+            [Yy]* )  
+                rm -rf !(.git|.venv|.testrepository|midokura) > /dev/null 2>&1;
+                break;;
+            [Nn]* )
+                exit;;
+            * ) echo "Please, answer yes or no."
+        esac
+    done
+}
 
 if [ $DELETE ]; then
+    clean
     exit 0
+fi
+
+if [ -e .tempest_revision ]; then
+    while true; do
+        read -p "There was a previous tempest installed, do you want to clean it before? [y/n] " yn
+        case $yn in
+            [Yy]* ) clean; break;;
+            [Nn]* ) exit;;
+            * ) echo "Please, answer yes or no.";;
+        esac
+    done
 fi
 
 # Clone and checkout a specific tempest_revision
@@ -96,9 +125,10 @@ if [ ! -e $CONFIG_FILE ]; then
 fi
 
 # Prepare the virtualenv environment for mido-setup.py
+sudo pip install virtualenv
 python tools/install_venv.py
-
-cp $CONFIG_FILE etc/
+tools/with_venv.sh pip install -r $MIDO_UTILS/midokura-requirements.txt
+cp $CONFIG_FILE etc/tempest.conf
 
 echo "Executing mido-setup.py..."
 tools/with_venv.sh python mido-setup.py
